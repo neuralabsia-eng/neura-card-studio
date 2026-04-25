@@ -77,6 +77,26 @@ export default async function MuroPage() {
         initialImages={state.images}
         supabaseConfig={state.supabaseConfig}
       />
+      <footer className="pointer-events-auto absolute inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#0f0f0f]/75 px-5 py-4 text-center font-mono text-xs leading-6 text-zinc-400 backdrop-blur-sm sm:text-sm">
+        Creado por{" "}
+        <a
+          href="https://erasmoh.dev"
+          target="_blank"
+          rel="noreferrer"
+          className="font-black text-[#f7df1e] underline decoration-[#f7df1e]/40 underline-offset-4 transition hover:text-yellow-200"
+        >
+          @ErasmoHernandez
+        </a>
+        , con amor para la comunidad JS Chile ·{" "}
+        <a
+          href="https://erasmoh.dev"
+          target="_blank"
+          rel="noreferrer"
+          className="font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-[#f7df1e]"
+        >
+          erasmoh.dev
+        </a>
+      </footer>
     </main>
   );
 }
