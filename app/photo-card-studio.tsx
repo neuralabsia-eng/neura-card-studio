@@ -8,6 +8,9 @@ const CARD_HEIGHT = 1620;
 const CARD_BORDER = 68;
 const COOLDOWN_MS = 60_000;
 const EVENT_DATE = "30ABR26";
+const DEFAULT_EVENT_UNLOCK_AT = "2026-04-30T00:00:00-04:00";
+const EVENT_UNLOCK_AT = process.env.NEXT_PUBLIC_EVENT_UNLOCK_AT ?? DEFAULT_EVENT_UNLOCK_AT;
+const DEV_UNLOCK_COOKIE = "js_chile_dev_unlock";
 const JS_YELLOW = "#f7df1e";
 const INK = "#111111";
 const COMIC_WHITE = "#f8f8f2";
@@ -52,6 +55,43 @@ function isLikelyMobileDevice() {
   }
 
   return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
+}
+
+function getEventUnlockTime() {
+  const configuredTime = Date.parse(EVENT_UNLOCK_AT);
+
+  return Number.isNaN(configuredTime) ? Date.parse(DEFAULT_EVENT_UNLOCK_AT) : configuredTime;
+}
+
+function hasCookie(name: string) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  return document.cookie.split("; ").some((cookie) => cookie.startsWith(`${name}=`));
+}
+
+function setDevUnlockCookie() {
+  document.cookie = `${DEV_UNLOCK_COOKIE}=1; path=/; max-age=2592000; SameSite=Lax`;
+}
+
+function clearDevUnlockCookie() {
+  document.cookie = `${DEV_UNLOCK_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+function formatCountdown(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    days,
+    hours: String(hours).padStart(2, "0"),
+    minutes: String(minutes).padStart(2, "0"),
+    seconds: String(seconds).padStart(2, "0"),
+  };
 }
 
 function luminance(red: number, green: number, blue: number) {
@@ -357,10 +397,14 @@ export default function PhotoCardStudio() {
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [loaderStep, setLoaderStep] = useState(0);
+  const [devUnlocked, setDevUnlocked] = useState(false);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
     text: "Toca Activar cámara para que el navegador solicite permiso de acceso.",
   });
+  const eventUnlockTime = getEventUnlockTime();
+  const gateLocked = now < eventUnlockTime && !devUnlocked;
+  const countdown = formatCountdown(eventUnlockTime - now);
   const cooldownRemainingSeconds = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0;
   const canGenerate = cooldownRemainingSeconds === 0 && !isGenerating;
 
@@ -425,6 +469,38 @@ export default function PhotoCardStudio() {
   useEffect(() => {
     return stopCamera;
   }, [stopCamera]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+
+      if (params.get("dev") === "1") {
+        setDevUnlockCookie();
+        setDevUnlocked(true);
+        return;
+      }
+
+      if (params.get("dev_lock") === "1") {
+        clearDevUnlockCookie();
+        setDevUnlocked(false);
+        return;
+      }
+
+      setDevUnlocked(hasCookie(DEV_UNLOCK_COOKIE));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!gateLocked) {
+      return;
+    }
+
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+
+    return () => window.clearInterval(interval);
+  }, [gateLocked]);
 
   useEffect(() => {
     if (!isGenerating) {
@@ -615,6 +691,60 @@ export default function PhotoCardStudio() {
       text: "Enviar al muro queda para la fase de Supabase. Por ahora la card final queda visible y descargable.",
     });
   };
+
+  if (gateLocked) {
+    return (
+      <main className="flex min-h-dvh flex-col bg-[#0f0f0f] text-white">
+        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-5 py-10 text-center">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#f7df1e]/50 bg-[#f7df1e]/10 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.24em] text-[#f7df1e]">
+            JS Chile Meetup · {EVENT_DATE}
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-5xl font-black leading-[0.92] tracking-[-0.06em] text-[#f7df1e] sm:text-7xl">
+              Disponible el 30 de abril
+            </h1>
+            <p className="mx-auto max-w-xl text-base leading-7 text-zinc-300 sm:text-lg">
+              La cámara y generación de cards se habilitarán automáticamente para el meetup.
+            </p>
+          </div>
+
+          <div className="grid w-full max-w-xl grid-cols-4 gap-2 font-mono">
+            {[
+              ["Días", countdown.days],
+              ["Horas", countdown.hours],
+              ["Min", countdown.minutes],
+              ["Seg", countdown.seconds],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-4">
+                <div className="text-3xl font-black text-[#f7df1e] sm:text-5xl">{value}</div>
+                <div className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <footer className="border-t border-white/10 px-5 py-5 text-center font-mono text-xs leading-6 text-zinc-400 sm:text-sm">
+          Creado por{" "}
+          <a
+            href="https://erasmoh.dev"
+            target="_blank"
+            rel="noreferrer"
+            className="font-black text-[#f7df1e] underline decoration-[#f7df1e]/40 underline-offset-4 transition hover:text-yellow-200"
+          >
+            @ErasmoHernandez
+          </a>
+          , con amor para la comunidad JS Chile ·{" "}
+          <a
+            href="https://erasmoh.dev"
+            target="_blank"
+            rel="noreferrer"
+            className="font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-[#f7df1e]"
+          >
+            erasmoh.dev
+          </a>
+        </footer>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-dvh flex-col bg-[#0f0f0f] text-white">

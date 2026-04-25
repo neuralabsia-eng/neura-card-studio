@@ -33,6 +33,16 @@ Do not prefix these variables with `NEXT_PUBLIC_`; they must stay server-side.
 
 For mobile camera testing, use `localhost`, HTTPS, or a deployed URL. Some mobile browsers block camera access on plain HTTP LAN URLs.
 
+## Event gate
+
+The app is locked until the configured event date:
+
+```bash
+NEXT_PUBLIC_EVENT_UNLOCK_AT=2026-04-30T00:00:00-04:00
+```
+
+For development, open `/?dev=1` to create the `js_chile_dev_unlock=1` cookie and bypass the countdown. Use `/?dev_lock=1` to clear it.
+
 ## Verification
 
 ```bash
