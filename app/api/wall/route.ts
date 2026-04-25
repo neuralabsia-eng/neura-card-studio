@@ -1,6 +1,8 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import {
   createWallImageRecord,
+  findWallImageByHash,
   listWallImages,
   shuffleWallImages,
   SupabaseWallConfigError,
@@ -70,6 +72,10 @@ function errorResponse(error: unknown, fallback: string, status = 500) {
   );
 }
 
+function hashImage(buffer: Buffer) {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
 export async function GET() {
   try {
     const images = shuffleWallImages(await listWallImages());
@@ -96,10 +102,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const uploaded = await uploadWallImage(image.buffer, image.contentType, image.extension);
-    const record = await createWallImageRecord(uploaded.publicUrl, uploaded.path);
+    const imageHash = hashImage(image.buffer);
+    const existingRecord = await findWallImageByHash(imageHash);
 
-    return Response.json({ image: record }, { status: 201 });
+    if (existingRecord) {
+      return Response.json({ duplicate: true, image: existingRecord }, { status: 200 });
+    }
+
+    const uploaded = await uploadWallImage(image.buffer, image.contentType, image.extension);
+    const record = await createWallImageRecord(uploaded.publicUrl, uploaded.path, imageHash);
+
+    return Response.json({ duplicate: false, image: record }, { status: 201 });
   } catch (error) {
     return errorResponse(error, "No pude enviar la imagen al muro.");
   }

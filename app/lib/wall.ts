@@ -4,6 +4,7 @@ export type WallImageRecord = {
   id: string;
   image_url: string;
   storage_path: string;
+  image_hash: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -12,6 +13,11 @@ type SupabaseWallConfig = {
   url: string;
   apiKey: string;
   bucket: string;
+};
+
+export type SupabaseBrowserConfig = {
+  url: string;
+  publishableKey: string;
 };
 
 const WALL_TABLE = "wall_images";
@@ -39,6 +45,20 @@ function getSupabaseWallConfig(): SupabaseWallConfig {
   };
 }
 
+export function getSupabaseBrowserConfig(): SupabaseBrowserConfig | null {
+  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !publishableKey) {
+    return null;
+  }
+
+  return {
+    url,
+    publishableKey,
+  };
+}
+
 function getAuthHeaders(apiKey: string) {
   return {
     apikey: apiKey,
@@ -57,6 +77,7 @@ function assertWallImageRecord(value: unknown): WallImageRecord {
     typeof record.id !== "string" ||
     typeof record.image_url !== "string" ||
     typeof record.storage_path !== "string" ||
+    (typeof record.image_hash !== "string" && record.image_hash !== null) ||
     typeof record.created_at !== "string" ||
     typeof record.updated_at !== "string"
   ) {
@@ -89,7 +110,7 @@ async function readSupabaseError(response: Response) {
 export async function listWallImages() {
   const { url, apiKey } = getSupabaseWallConfig();
   const searchParams = new URLSearchParams({
-    select: "id,image_url,storage_path,created_at,updated_at",
+    select: "id,image_url,storage_path,image_hash,created_at,updated_at",
     order: "updated_at.desc",
   });
   const response = await fetch(`${url}/rest/v1/${WALL_TABLE}?${searchParams}`, {
@@ -102,6 +123,27 @@ export async function listWallImages() {
   }
 
   return assertWallImageRecords(await response.json());
+}
+
+export async function findWallImageByHash(imageHash: string) {
+  const { url, apiKey } = getSupabaseWallConfig();
+  const searchParams = new URLSearchParams({
+    select: "id,image_url,storage_path,image_hash,created_at,updated_at",
+    image_hash: `eq.${imageHash}`,
+    limit: "1",
+  });
+  const response = await fetch(`${url}/rest/v1/${WALL_TABLE}?${searchParams}`, {
+    headers: getAuthHeaders(apiKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await readSupabaseError(response));
+  }
+
+  const records = assertWallImageRecords(await response.json());
+
+  return records[0] ?? null;
 }
 
 export async function uploadWallImage(buffer: Buffer, contentType: string, extension: string) {
@@ -129,7 +171,7 @@ export async function uploadWallImage(buffer: Buffer, contentType: string, exten
   };
 }
 
-export async function createWallImageRecord(imageUrl: string, storagePath: string) {
+export async function createWallImageRecord(imageUrl: string, storagePath: string, imageHash: string) {
   const { url, apiKey } = getSupabaseWallConfig();
   const response = await fetch(`${url}/rest/v1/${WALL_TABLE}`, {
     method: "POST",
@@ -141,6 +183,7 @@ export async function createWallImageRecord(imageUrl: string, storagePath: strin
     body: JSON.stringify({
       image_url: imageUrl,
       storage_path: storagePath,
+      image_hash: imageHash,
     }),
   });
 

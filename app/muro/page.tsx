@@ -1,6 +1,13 @@
-import type { CSSProperties } from "react";
 import Image from "next/image";
-import { listWallImages, shuffleWallImages, SupabaseWallConfigError, type WallImageRecord } from "../lib/wall";
+import {
+  getSupabaseBrowserConfig,
+  listWallImages,
+  shuffleWallImages,
+  SupabaseWallConfigError,
+  type SupabaseBrowserConfig,
+  type WallImageRecord,
+} from "../lib/wall";
+import WallRealtime from "./wall-realtime";
 
 export const dynamic = "force-dynamic";
 
@@ -8,47 +15,27 @@ type WallPageState =
   | {
       configured: true;
       images: WallImageRecord[];
+      supabaseConfig: SupabaseBrowserConfig | null;
     }
   | {
       configured: false;
       images: [];
+      supabaseConfig: null;
     };
-
-function hashString(value: string) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function getCardStyle(image: WallImageRecord, index: number): CSSProperties {
-  const hash = hashString(`${image.id}-${image.updated_at}`);
-  const rotation = (hash % 35) - 17;
-  const left = 8 + ((hash + index * 17) % 85);
-  const top = 10 + (((hash >> 8) + index * 23) % 80);
-
-  return {
-    left: `${left}%`,
-    top: `${top}%`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-    zIndex: (index % 9) + 1,
-  };
-}
 
 async function getWallPageState(): Promise<WallPageState> {
   try {
     return {
       configured: true,
       images: shuffleWallImages(await listWallImages()),
+      supabaseConfig: getSupabaseBrowserConfig(),
     };
   } catch (error) {
     if (error instanceof SupabaseWallConfigError) {
       return {
         configured: false,
         images: [],
+        supabaseConfig: null,
       };
     }
 
@@ -85,41 +72,11 @@ export default async function MuroPage() {
         </div>
       </header>
 
-      {!state.configured ? (
-        <div className="relative z-10 flex min-h-dvh items-center justify-center p-6 text-center text-yellow-100">
-          Falta configurar Supabase para cargar el muro.
-        </div>
-      ) : state.images.length === 0 ? (
-        <div className="relative z-10 flex min-h-dvh items-center justify-center p-8 text-center">
-          <div className="max-w-md space-y-3">
-            <p className="text-3xl font-black text-[#f7df1e]">Aún no hay cards en el muro</p>
-            <p className="text-sm leading-6 text-zinc-400">
-              Cuando alguien autorice compartir su imagen generada, aparecerá aquí.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <section className="absolute inset-0">
-          {state.images.map((image, index) => (
-            <article
-              key={image.id}
-              style={getCardStyle(image, index)}
-              className="absolute w-[38vw] min-w-[132px] max-w-[240px] overflow-hidden rounded-[1.15rem] bg-black shadow-[0_24px_70px_rgba(0,0,0,0.6)] transition duration-300 hover:z-50 hover:scale-110 sm:w-[24vw] md:w-[220px]"
-            >
-              <div className="relative aspect-[2/3]">
-                <Image
-                  src={image.image_url}
-                  alt="Card compartida en el muro del evento"
-                  fill
-                  sizes="(max-width: 640px) 38vw, (max-width: 768px) 24vw, 220px"
-                  unoptimized
-                  className="object-cover"
-                />
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
+      <WallRealtime
+        configured={state.configured}
+        initialImages={state.images}
+        supabaseConfig={state.supabaseConfig}
+      />
     </main>
   );
 }
