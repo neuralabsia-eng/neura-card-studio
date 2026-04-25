@@ -170,21 +170,21 @@ function drawComicVideo(
   const sourceHeight = video.videoHeight;
   const sourceRatio = sourceWidth / sourceHeight;
   const targetRatio = width / height;
-  let sx = 0;
-  let sy = 0;
-  let sw = sourceWidth;
-  let sh = sourceHeight;
+  let drawX = x;
+  let drawY = y;
+  let drawWidth = width;
+  let drawHeight = height;
 
   if (sourceRatio > targetRatio) {
-    sw = sourceHeight * targetRatio;
-    sx = (sourceWidth - sw) / 2;
+    drawHeight = width / sourceRatio;
+    drawY = y + (height - drawHeight) / 2;
   } else {
-    sh = sourceWidth / targetRatio;
-    sy = (sourceHeight - sh) / 2;
+    drawWidth = height * sourceRatio;
+    drawX = x + (width - drawWidth) / 2;
   }
 
   const lowWidth = 188;
-  const lowHeight = Math.round(lowWidth / targetRatio);
+  const lowHeight = Math.round(lowWidth / sourceRatio);
   const pixelCanvas = document.createElement("canvas");
   pixelCanvas.width = lowWidth;
   pixelCanvas.height = lowHeight;
@@ -197,7 +197,7 @@ function drawComicVideo(
 
   pixelContext.translate(lowWidth, 0);
   pixelContext.scale(-1, 1);
-  pixelContext.drawImage(video, sx, sy, sw, sh, 0, 0, lowWidth, lowHeight);
+  pixelContext.drawImage(video, 0, 0, sourceWidth, sourceHeight, 0, 0, lowWidth, lowHeight);
 
   const pixels = pixelContext.getImageData(0, 0, lowWidth, lowHeight);
   const source = new Uint8ClampedArray(pixels.data);
@@ -233,7 +233,7 @@ function drawComicVideo(
   pixelContext.putImageData(pixels, 0, 0);
 
   context.imageSmoothingEnabled = false;
-  context.drawImage(pixelCanvas, x, y, width, height);
+  context.drawImage(pixelCanvas, drawX, drawY, drawWidth, drawHeight);
   context.imageSmoothingEnabled = true;
 }
 
@@ -341,8 +341,8 @@ function drawCardWithPortrait(context: CanvasRenderingContext2D, image: HTMLImag
 function captureSourceImage(video: HTMLVideoElement) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
-  const width = 960;
-  const height = 1280;
+  const width = 1024;
+  const height = 1024;
 
   if (!context) {
     return null;
@@ -355,22 +355,24 @@ function captureSourceImage(video: HTMLVideoElement) {
   const sourceHeight = video.videoHeight;
   const sourceRatio = sourceWidth / sourceHeight;
   const targetRatio = width / height;
-  let sx = 0;
-  let sy = 0;
-  let sw = sourceWidth;
-  let sh = sourceHeight;
+  let dx = 0;
+  let dy = 0;
+  let dw = width;
+  let dh = height;
 
   if (sourceRatio > targetRatio) {
-    sw = sourceHeight * targetRatio;
-    sx = (sourceWidth - sw) / 2;
+    dh = width / sourceRatio;
+    dy = (height - dh) / 2;
   } else {
-    sh = sourceWidth / targetRatio;
-    sy = (sourceHeight - sh) / 2;
+    dw = height * sourceRatio;
+    dx = (width - dw) / 2;
   }
 
+  context.fillStyle = "#0f0f0f";
+  context.fillRect(0, 0, width, height);
   context.translate(width, 0);
   context.scale(-1, 1);
-  context.drawImage(video, sx, sy, sw, sh, 0, 0, width, height);
+  context.drawImage(video, 0, 0, sourceWidth, sourceHeight, dx, dy, dw, dh);
 
   return canvas.toDataURL("image/jpeg", 0.92);
 }
@@ -398,6 +400,8 @@ export default function PhotoCardStudio() {
   const [now, setNow] = useState(() => Date.now());
   const [loaderStep, setLoaderStep] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
     text: "Toca Activar cámara para que el navegador solicite permiso de acceso.",
@@ -431,6 +435,7 @@ export default function PhotoCardStudio() {
       setCameraReady(false);
       setSourceImage(null);
       setCapturedImage(null);
+      setIsShareDialogOpen(false);
       setStatus({
         tone: "info",
         text: isMobile
@@ -442,8 +447,9 @@ export default function PhotoCardStudio() {
         audio: false,
         video: {
           facingMode: { ideal: "user" },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+          aspectRatio: { ideal: 4 / 3 },
         },
       });
 
@@ -550,6 +556,7 @@ export default function PhotoCardStudio() {
 
     if (capturedImage) {
       setCapturedImage(null);
+      setIsShareDialogOpen(false);
       setStatus({
         tone: "info",
         text: "Cámara lista. Centra tu cara y vuelve a capturar.",
@@ -685,11 +692,56 @@ export default function PhotoCardStudio() {
     link.click();
   };
 
-  const showSaveSoon = () => {
-    setStatus({
-      tone: "info",
-      text: "Enviar al muro queda para la fase de Supabase. Por ahora la card final queda visible y descargable.",
-    });
+  const openShareDialog = () => {
+    if (!capturedImage) {
+      return;
+    }
+
+    setIsShareDialogOpen(true);
+  };
+
+  const shareToWall = async () => {
+    if (!capturedImage || isSharing) {
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+      setStatus({
+        tone: "info",
+        text: "Enviando la imagen generada al muro del evento.",
+      });
+
+      const response = await fetch("/api/wall", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageDataUrl: capturedImage,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No pude enviar la imagen al muro.");
+      }
+
+      setIsShareDialogOpen(false);
+      setStatus({
+        tone: "success",
+        text: "Imagen enviada al muro del evento. Gracias por compartir tu card.",
+      });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        text: error instanceof Error ? error.message : "No pude enviar la imagen al muro.",
+      });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   if (gateLocked) {
@@ -809,11 +861,11 @@ export default function PhotoCardStudio() {
               </button>
               <button
                 type="button"
-                onClick={showSaveSoon}
-                disabled={!capturedImage}
+                onClick={openShareDialog}
+                disabled={!capturedImage || isSharing}
                 className="rounded-lg border border-white/20 px-3 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-white/50 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
-                Enviar al muro
+                {isSharing ? "Enviando..." : "Enviar al muro"}
               </button>
             </div>
             {cooldownRemainingSeconds > 0 && (
@@ -829,7 +881,7 @@ export default function PhotoCardStudio() {
             <div className="relative aspect-[2/3] overflow-hidden rounded-[1.55rem] border-[10px] border-[#f7df1e] bg-black font-mono">
               <video
                 ref={videoRef}
-                className="absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+                className="absolute inset-0 h-full w-full scale-x-[-1] bg-black object-contain"
                 muted
                 playsInline
                 autoPlay
@@ -902,6 +954,47 @@ export default function PhotoCardStudio() {
           erasmoh.dev
         </a>
       </footer>
+      {isShareDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-wall-title"
+            className="w-full max-w-md rounded-[2rem] border border-[#f7df1e]/50 bg-[#111] p-6 text-white shadow-2xl"
+          >
+            <div className="space-y-4">
+              <div className="inline-flex rounded-full bg-[#f7df1e] px-3 py-1 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-black">
+                Confirmación
+              </div>
+              <h2 id="share-wall-title" className="text-2xl font-black leading-tight text-[#f7df1e]">
+                Enviar al muro
+              </h2>
+              <p className="text-sm leading-6 text-zinc-200">
+                ¿Autorizas a compartir la imagen generada en el muro del evento? Quedará almacenada SOLO LA IMAGEN
+                GENERADA, la foto de tu rostro real nunca sale de tu dispositivo.
+              </p>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setIsShareDialogOpen(false)}
+                disabled={isSharing}
+                className="rounded-xl border border-white/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={shareToWall}
+                disabled={isSharing}
+                className="rounded-xl bg-[#f7df1e] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSharing ? "Enviando..." : "Sí, enviar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <canvas ref={canvasRef} className="hidden" />
     </main>
   );
