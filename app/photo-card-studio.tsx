@@ -478,10 +478,10 @@ export default function PhotoCardStudio() {
           </div>
           <div className="space-y-4">
             <h1 className="max-w-xl text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
-              Tu cara en una card 16-bit JS
+              {EVENT_COPY.heroTitle}
             </h1>
             <p className="max-w-lg text-base leading-7 text-muted sm:text-lg">
-              Usa la cámara frontal, captura tu foto y genera automáticamente un retrato 16-bit pixel con IA para tu card JavaScript.
+              {EVENT_COPY.heroSubtitle}
             </p>
           </div>
 
@@ -572,7 +572,7 @@ export default function PhotoCardStudio() {
                     {EVENT_COPY.eventDateBadge}
                   </span>
                   <p className="text-xl font-black tracking-[0.02em] text-brand-glow">
-                    JS CHILE MEETUP
+                    {EVENT_COPY.eventShortName}
                   </p>
                 </div>
               )}
@@ -593,7 +593,7 @@ export default function PhotoCardStudio() {
                     ))}
                   </div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-glow">
-                    Generando retrato 16-bit
+                    {EVENT_COPY.generatingLabel}
                   </p>
                 </div>
               )}
