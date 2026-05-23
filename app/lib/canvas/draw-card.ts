@@ -2,6 +2,7 @@
 // Extraído de photo-card-studio.tsx para aislamiento y mantenibilidad.
 
 import { BRAND, BRAND_GRADIENT_STOPS, NEURAL_PALETTE } from "../theme";
+import { EVENT_COPY } from "../event-copy";
 
 // ─── Dimensiones de la card ───────────────────────────────────────────────────
 export const CARD_WIDTH  = 1080;
@@ -35,11 +36,12 @@ function paintPixel(data: Uint8ClampedArray, i: number, hex: string) {
 
 export async function preloadFonts() {
   if (typeof document === "undefined") return;
-  await Promise.all([
-    document.fonts.load("700 48px 'Space Grotesk', sans-serif"),
-    document.fonts.load("600 32px 'Space Grotesk', sans-serif"),
-    document.fonts.load("500 20px 'Space Grotesk', sans-serif"),
-  ]);
+  const sizes = [
+    "700 88px", "700 52px", "700 48px", "700 34px",
+    "600 32px", "600 22px",
+    "500 24px", "500 22px", "500 20px",
+  ];
+  await Promise.all(sizes.map((s) => document.fonts.load(`${s} 'Space Grotesk', sans-serif`)));
 }
 
 // ─── HUD text renderer (replaces pixel font) ──────────────────────────────────
@@ -81,13 +83,47 @@ function drawHudText(
   const chars = [...text];
   const widths = chars.map((c) => ctx.measureText(c).width + letterSpacing);
   const totalWidth = widths.reduce((s, w) => s + w, 0) - letterSpacing;
-  let x = align === "center" ? cx - totalWidth / 2 : cx;
+  let x = align === "center" ? cx - totalWidth / 2
+         : align === "right"  ? cx - totalWidth : cx;
 
   chars.forEach((c, i) => {
     ctx.fillText(c, x, cy);
     x += widths[i];
   });
 
+  ctx.restore();
+}
+
+// ─── Neura.Lab logo mark (drawn as canvas path — no external asset needed) ────
+
+function drawNeuraLogoMark(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+) {
+  const archR = size * 0.52;
+  const archCy = cy + size * 0.38;
+  const grad = ctx.createLinearGradient(cx - archR, cy, cx + archR, cy + size);
+  grad.addColorStop(0, "#7C3AED");
+  grad.addColorStop(0.5, "#A855F7");
+  grad.addColorStop(1, "#C026D3");
+
+  ctx.save();
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = size * 0.17;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(cx, archCy, archR, Math.PI * 1.08, Math.PI * 1.92, false);
+  ctx.stroke();
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy + size * 0.64, size * 0.11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy + size * 0.85, size * 0.085, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -213,11 +249,11 @@ export function drawCardBackground(ctx: CanvasRenderingContext2D): PhotoArea {
   return { x: px, y: py, width: pw, height: ph };
 }
 
-// ─── Card chrome overlay (HUD aesthetic) ─────────────────────────────────────
+// ─── Card chrome overlay — shareable badge + Neura branding ─────────────────
 
-export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea, eventLabel = "NEURA.LAB") {
+export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea) {
   const { x, y, width, height } = area;
-  const overlayH = 300;
+  const overlayH = 420;
   const overlayY = y + height - overlayH;
 
   // 1. Glow border around photo area
@@ -229,14 +265,13 @@ export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea, e
   ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
   ctx.restore();
 
-  // 2. HUD corner brackets ([ ] style, each 60x60 px)
+  // 2. HUD corner brackets
   const bLen = 60, bW = 6;
   ctx.strokeStyle = BRAND.brandGlow;
   ctx.lineWidth = bW;
-  const corners = [
+  ([
     [x, y], [x + width, y], [x, y + height], [x + width, y + height],
-  ] as const;
-  corners.forEach(([cx_, cy_], i) => {
+  ] as const).forEach(([cx_, cy_], i) => {
     const sx = i % 2 === 0 ? 1 : -1;
     const sy = i < 2 ? 1 : -1;
     ctx.beginPath();
@@ -246,67 +281,108 @@ export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea, e
     ctx.stroke();
   });
 
-  // 3. Outer card border — subtle brand glow
+  // 3. Outer card border
   ctx.strokeStyle = BRAND.brand + "60";
   ctx.lineWidth = 4;
   ctx.strokeRect(2, 2, CARD_WIDTH - 4, CARD_HEIGHT - 4);
 
-  // 4. Bottom gradient overlay for legibility
-  const gOver = ctx.createLinearGradient(0, overlayY - 60, 0, y + height);
+  // 4. Bottom gradient overlay — dark bg for text legibility
+  const gOver = ctx.createLinearGradient(0, overlayY - 80, 0, y + height);
   gOver.addColorStop(0, "rgba(10,14,26,0)");
-  gOver.addColorStop(0.3, "rgba(10,14,26,0.72)");
-  gOver.addColorStop(1, "rgba(10,14,26,0.97)");
+  gOver.addColorStop(0.22, "rgba(10,14,26,0.90)");
+  gOver.addColorStop(1, "rgba(10,14,26,0.98)");
   ctx.fillStyle = gOver;
-  ctx.fillRect(x, overlayY - 60, width, overlayH + 60);
+  ctx.fillRect(x, overlayY - 80, width, overlayH + 80);
 
-  // 5. Separator line
+  // 5. Neura.Lab logo mark + wordmark
+  const logoSize = 54;
+  const logoRowCy = overlayY + 20 + logoSize / 2;
+  drawNeuraLogoMark(ctx, x + 72 + logoSize / 2, overlayY + 20, logoSize);
+
+  ctx.save();
+  ctx.font = "700 34px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = BRAND.brandGlow;
+  ctx.shadowColor = BRAND.brandGlow;
+  ctx.shadowBlur = 14;
+  ctx.textBaseline = "middle";
+  ctx.fillText("NEURA.LAB", x + 72 + logoSize + 14, logoRowCy);
+  ctx.restore();
+
+  // University name — right-aligned
+  ctx.save();
+  ctx.font = "500 21px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = BRAND.textMuted;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "right";
+  ctx.fillText(EVENT_COPY.universityName, x + width - 52, logoRowCy);
+  ctx.restore();
+
+  // 6. Gradient separator
   const gLine = ctx.createLinearGradient(x + 40, 0, x + width - 40, 0);
-  BRAND_GRADIENT_STOPS.forEach(([stop, color]) => gLine.addColorStop(stop, color));
+  BRAND_GRADIENT_STOPS.forEach(([s, c]) => gLine.addColorStop(s, c));
   ctx.fillStyle = gLine;
-  ctx.fillRect(x + 60, overlayY + 10, width - 120, 3);
+  ctx.fillRect(x + 48, overlayY + 88, width - 96, 2);
 
-  // 6. Date badge (top center)
-  const badgeW = 240, badgeH = 56, badgeX = CARD_WIDTH / 2 - badgeW / 2, badgeY = overlayY + 28;
-  ctx.fillStyle = BRAND.surface;
-  ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
-  ctx.strokeStyle = BRAND.brandGlow;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(badgeX + 3, badgeY + 3, badgeW - 6, badgeH - 6);
-
-  drawHudText(ctx, "NEURA.LAB", CARD_WIDTH / 2, badgeY + badgeH / 2, {
-    font: "700 28px 'Space Grotesk', sans-serif",
-    color: BRAND.brandGlow,
-    letterSpacing: 6,
-    glow: true,
+  // 7. Achievement statement — shareable, first-person
+  drawHudText(ctx, EVENT_COPY.cardStatement1, CARD_WIDTH / 2, overlayY + 146, {
+    font: "700 50px 'Space Grotesk', sans-serif",
+    color: BRAND.text,
+    letterSpacing: 2,
   });
 
-  // 7. Event label / tagline
-  drawHudText(ctx, eventLabel + " // AGENT ACTIVATED", CARD_WIDTH / 2, overlayY + 128, {
-    font: "500 26px 'Space Grotesk', sans-serif",
+  // "AGENTE IA" — big glow highlight
+  ctx.save();
+  ctx.font = "700 86px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = BRAND.brandGlow;
+  ctx.shadowColor = BRAND.brandGlow;
+  ctx.shadowBlur = 36;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillText(EVENT_COPY.cardStatement2, CARD_WIDTH / 2, overlayY + 230);
+  ctx.restore();
+
+  // 8. Thin separator
+  ctx.fillStyle = BRAND.brand + "45";
+  ctx.fillRect(x + 80, overlayY + 284, width - 160, 1);
+
+  // 9. Event full name
+  drawHudText(ctx, EVENT_COPY.eventFullName, CARD_WIDTH / 2, overlayY + 315, {
+    font: "500 22px 'Space Grotesk', sans-serif",
     color: BRAND.textMuted,
-    letterSpacing: 3,
+    letterSpacing: 0.4,
   });
 
-  // 8. Tick marks (outer card edges — HUD dial aesthetic)
+  // 10. Date + platform
+  drawHudText(ctx, EVENT_COPY.cardDateLine, CARD_WIDTH / 2, overlayY + 350, {
+    font: "500 19px 'Space Grotesk', sans-serif",
+    color: BRAND.textFaint,
+    letterSpacing: 0.8,
+  });
+
+  // 11. Social handles — drives traffic
+  drawHudText(ctx, EVENT_COPY.socialLine, CARD_WIDTH / 2, overlayY + 388, {
+    font: "600 21px 'Space Grotesk', sans-serif",
+    color: BRAND.brandGlow,
+    letterSpacing: 1.2,
+  });
+
+  // 12. Tick marks (outer card edges)
   ctx.fillStyle = BRAND.brand + "80";
-  const tickPositions = [0.15, 0.35, 0.65, 0.85];
-  tickPositions.forEach((t) => {
+  [0.15, 0.35, 0.65, 0.85].forEach((t) => {
     const tx = CARD_WIDTH * t;
     ctx.fillRect(tx - 1, 0, 2, 16);
     ctx.fillRect(tx - 1, CARD_HEIGHT - 16, 2, 16);
   });
 
-  // 9. Small radial glow at top (portrait halo)
+  // 13. Portrait halo (top area radial glow)
   const gHalo = ctx.createRadialGradient(
-    x + width / 2, y + height * 0.3,
-    50,
-    x + width / 2, y + height * 0.3,
-    width * 0.7,
+    x + width / 2, y + height * 0.28, 50,
+    x + width / 2, y + height * 0.28, width * 0.7,
   );
-  gHalo.addColorStop(0, BRAND.brandGlow + "20");
+  gHalo.addColorStop(0, BRAND.brandGlow + "1A");
   gHalo.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = gHalo;
-  ctx.fillRect(x, y, width, height * 0.6);
+  ctx.fillRect(x, y, width, height * 0.55);
 }
 
 // ─── Cover-fit image into area ────────────────────────────────────────────────
@@ -335,16 +411,16 @@ export function drawCoverImage(
 
 // ─── Full card render functions ───────────────────────────────────────────────
 
-export function drawCard(ctx: CanvasRenderingContext2D, video: HTMLVideoElement, eventLabel?: string) {
+export function drawCard(ctx: CanvasRenderingContext2D, video: HTMLVideoElement) {
   const area = drawCardBackground(ctx);
   drawNeuralVideo(ctx, video, area.x, area.y, area.width, area.height);
-  drawCardChrome(ctx, area, eventLabel);
+  drawCardChrome(ctx, area);
 }
 
-export function drawCardWithPortrait(ctx: CanvasRenderingContext2D, image: HTMLImageElement, eventLabel?: string) {
+export function drawCardWithPortrait(ctx: CanvasRenderingContext2D, image: HTMLImageElement) {
   const area = drawCardBackground(ctx);
   drawCoverImage(ctx, image, image.naturalWidth, image.naturalHeight, area);
-  drawCardChrome(ctx, area, eventLabel);
+  drawCardChrome(ctx, area);
 }
 
 // ─── Capture source selfie as JPEG data URL ───────────────────────────────────

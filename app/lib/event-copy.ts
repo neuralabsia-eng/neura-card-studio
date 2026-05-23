@@ -60,4 +60,17 @@ export const EVENT_COPY = {
   // Canvas chrome
   canvasTagline:     "NEURA.LAB",
   canvasEventLabel:  "TALLER · UNIV. SAN PABLO",
+
+  // Card shareable statement
+  cardStatement1:    "CONSTRUÍ MI PRIMER",
+  cardStatement2:    "AGENTE IA",
+  cardDateLine:      "25 MAY 2026  ·  06:30 PM  ·  Google Meet",
+
+  // Social y redes (tráfico e-IG/LinkedIn)
+  instagramNeura:    "@neura.lab_ai",
+  instagramLuis:     "@LuisconIA",
+  linkedinNeura:     "linkedin.com/company/neuralab-ai",
+  linkedinLuis:      "linkedin.com/in/luis-uribehe",
+  website:           "neuralab.lat",
+  socialLine:        "@neura.lab_ai  ·  @LuisconIA  ·  neuralab.lat",
 } as const;

@@ -207,7 +207,7 @@ export default function PhotoCardStudio() {
     await preloadFonts();
     canvas.width = CARD_WIDTH;
     canvas.height = CARD_HEIGHT;
-    drawCard(context, video, EVENT_COPY.canvasEventLabel);
+    drawCard(context, video);
     setCapturedImage(canvas.toDataURL("image/png"));
   };
 
@@ -319,7 +319,7 @@ export default function PhotoCardStudio() {
       await preloadFonts();
       canvas.width = CARD_WIDTH;
       canvas.height = CARD_HEIGHT;
-      drawCardWithPortrait(context, portrait, EVENT_COPY.canvasEventLabel);
+      drawCardWithPortrait(context, portrait);
       setCapturedImage(canvas.toDataURL("image/png"));
       setCooldownUntil(Date.now() + COOLDOWN_MS);
       setNow(Date.now());
@@ -409,8 +409,18 @@ export default function PhotoCardStudio() {
     return (
       <main className="flex min-h-dvh flex-col bg-bg text-white">
         <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-5 py-10 text-center">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-glow/50 bg-brand-glow/10 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.24em] text-brand-glow">
-            {EVENT_COPY.gateBadge}
+          <div className="flex flex-col items-center gap-5">
+            {/* Neura.Lab logo */}
+            <Image
+              src="/neura-logo.png"
+              alt="Neura.Lab"
+              width={64}
+              height={64}
+              className="h-16 w-16 object-contain"
+            />
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-glow/50 bg-brand-glow/10 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.24em] text-brand-glow">
+              {EVENT_COPY.gateBadge}
+            </div>
           </div>
           <div className="space-y-4">
             <h1 className="text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
