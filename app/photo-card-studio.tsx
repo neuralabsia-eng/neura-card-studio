@@ -2,44 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { BRAND } from "./lib/theme";
+import {
+  drawCard,
+  drawCardWithPortrait,
+  captureSourceImage,
+  loadImage,
+  preloadFonts,
+  CARD_WIDTH,
+  CARD_HEIGHT,
+} from "./lib/canvas/draw-card";
 
-const CARD_WIDTH = 1080;
-const CARD_HEIGHT = 1620;
-const CARD_BORDER = 68;
 const COOLDOWN_MS = 60_000;
-const EVENT_DATE = "30ABR26";
 const DEFAULT_EVENT_UNLOCK_AT = "2026-04-30T00:00:00-04:00";
 const EVENT_UNLOCK_AT = process.env.NEXT_PUBLIC_EVENT_UNLOCK_AT ?? DEFAULT_EVENT_UNLOCK_AT;
 const DEV_UNLOCK_COOKIE = "js_chile_dev_unlock";
-const PIXEL_FONT: Record<string, string[]> = {
-  " ": ["000", "000", "000", "000", "000", "000", "000"],
-  "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
-  "2": ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
-  "3": ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
-  "6": ["00110", "01000", "10000", "11110", "10001", "10001", "01110"],
-  A: ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
-  B: ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
-  C: ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
-  E: ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
-  H: ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
-  I: ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
-  J: ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
-  L: ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
-  M: ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
-  P: ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
-  R: ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
-  S: ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
-  T: ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
-  U: ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
-};
-
-type PhotoArea = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+const EVENT_DATE = "NEURA.LAB";  // placeholder — actualizar en Fase 3 con event-copy.ts
 
 type StatusMessage = {
   tone: "info" | "error" | "success";
@@ -47,25 +24,18 @@ type StatusMessage = {
 };
 
 function isLikelyMobileDevice() {
-  if (typeof navigator === "undefined") {
-    return false;
-  }
-
+  if (typeof navigator === "undefined") return false;
   return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
 }
 
 function getEventUnlockTime() {
-  const configuredTime = Date.parse(EVENT_UNLOCK_AT);
-
-  return Number.isNaN(configuredTime) ? Date.parse(DEFAULT_EVENT_UNLOCK_AT) : configuredTime;
+  const t = Date.parse(EVENT_UNLOCK_AT);
+  return Number.isNaN(t) ? Date.parse(DEFAULT_EVENT_UNLOCK_AT) : t;
 }
 
 function hasCookie(name: string) {
-  if (typeof document === "undefined") {
-    return false;
-  }
-
-  return document.cookie.split("; ").some((cookie) => cookie.startsWith(`${name}=`));
+  if (typeof document === "undefined") return false;
+  return document.cookie.split("; ").some((c) => c.startsWith(`${name}=`));
 }
 
 function setDevUnlockCookie() {
@@ -76,312 +46,18 @@ function clearDevUnlockCookie() {
   document.cookie = `${DEV_UNLOCK_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-function formatCountdown(milliseconds: number) {
-  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
+function formatCountdown(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
   return {
     days,
     hours: String(hours).padStart(2, "0"),
     minutes: String(minutes).padStart(2, "0"),
     seconds: String(seconds).padStart(2, "0"),
   };
-}
-
-function luminance(red: number, green: number, blue: number) {
-  return red * 0.299 + green * 0.587 + blue * 0.114;
-}
-
-function hexToRgb(hex: string) {
-  const value = Number.parseInt(hex.slice(1), 16);
-
-  return {
-    red: (value >> 16) & 255,
-    green: (value >> 8) & 255,
-    blue: value & 255,
-  };
-}
-
-function paintPixel(data: Uint8ClampedArray, index: number, color: string) {
-  const { red, green, blue } = hexToRgb(color);
-
-  data[index] = red;
-  data[index + 1] = green;
-  data[index + 2] = blue;
-}
-
-function getPixelTextUnits(text: string) {
-  return [...text.toUpperCase()].reduce((width, character, index) => {
-    const glyph = PIXEL_FONT[character] ?? PIXEL_FONT[" "];
-
-    return width + glyph[0].length + (index === text.length - 1 ? 0 : 1);
-  }, 0);
-}
-
-function drawPixelText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  centerX: number,
-  centerY: number,
-  maxWidth: number,
-  maxScale: number,
-  color: string,
-) {
-  const characters = [...text.toUpperCase()];
-  const units = getPixelTextUnits(text);
-  const scale = Math.max(1, Math.min(maxScale, Math.floor(maxWidth / units)));
-  const width = units * scale;
-  const height = 7 * scale;
-  let x = centerX - width / 2;
-  const y = centerY - height / 2;
-
-  context.fillStyle = color;
-
-  for (const [characterIndex, character] of characters.entries()) {
-    const glyph = PIXEL_FONT[character] ?? PIXEL_FONT[" "];
-
-    for (const [rowIndex, row] of glyph.entries()) {
-      for (const [columnIndex, pixel] of [...row].entries()) {
-        if (pixel === "1") {
-          context.fillRect(Math.round(x + columnIndex * scale), Math.round(y + rowIndex * scale), scale, scale);
-        }
-      }
-    }
-
-    x += (glyph[0].length + (characterIndex === characters.length - 1 ? 0 : 1)) * scale;
-  }
-}
-
-function drawComicVideo(
-  context: CanvasRenderingContext2D,
-  video: HTMLVideoElement,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const sourceWidth = video.videoWidth;
-  const sourceHeight = video.videoHeight;
-  const sourceRatio = sourceWidth / sourceHeight;
-  const targetRatio = width / height;
-  let drawX = x;
-  let drawY = y;
-  let drawWidth = width;
-  let drawHeight = height;
-
-  if (sourceRatio > targetRatio) {
-    drawHeight = width / sourceRatio;
-    drawY = y + (height - drawHeight) / 2;
-  } else {
-    drawWidth = height * sourceRatio;
-    drawX = x + (width - drawWidth) / 2;
-  }
-
-  const lowWidth = 188;
-  const lowHeight = Math.round(lowWidth / sourceRatio);
-  const pixelCanvas = document.createElement("canvas");
-  pixelCanvas.width = lowWidth;
-  pixelCanvas.height = lowHeight;
-
-  const pixelContext = pixelCanvas.getContext("2d");
-
-  if (!pixelContext) {
-    return;
-  }
-
-  pixelContext.translate(lowWidth, 0);
-  pixelContext.scale(-1, 1);
-  pixelContext.drawImage(video, 0, 0, sourceWidth, sourceHeight, 0, 0, lowWidth, lowHeight);
-
-  const pixels = pixelContext.getImageData(0, 0, lowWidth, lowHeight);
-  const source = new Uint8ClampedArray(pixels.data);
-
-  for (let index = 0; index < pixels.data.length; index += 4) {
-    const pixel = index / 4;
-    const px = pixel % lowWidth;
-    const py = Math.floor(pixel / lowWidth);
-    const red = pixels.data[index];
-    const green = pixels.data[index + 1];
-    const blue = pixels.data[index + 2];
-    const light = luminance(red, green, blue);
-    const warm = red * 0.85 + green * 0.7 - blue * 0.75;
-    const right = px < lowWidth - 1 ? (py * lowWidth + px + 1) * 4 : index;
-    const bottom = py < lowHeight - 1 ? ((py + 1) * lowWidth + px) * 4 : index;
-    const edge =
-      Math.abs(light - luminance(source[right], source[right + 1], source[right + 2])) +
-      Math.abs(light - luminance(source[bottom], source[bottom + 1], source[bottom + 2]));
-
-    if (edge > 74 || light < 54) {
-      paintPixel(pixels.data, index, INK);
-    } else if (warm > 165 && light > 86 && light < 226) {
-      paintPixel(pixels.data, index, BRAND.brandGlow);
-    } else if (light > 186) {
-      paintPixel(pixels.data, index, COMIC_WHITE);
-    } else if (light > 104) {
-      paintPixel(pixels.data, index, COMIC_GRAY);
-    } else {
-      paintPixel(pixels.data, index, INK);
-    }
-  }
-
-  pixelContext.putImageData(pixels, 0, 0);
-
-  context.imageSmoothingEnabled = false;
-  context.drawImage(pixelCanvas, drawX, drawY, drawWidth, drawHeight);
-  context.imageSmoothingEnabled = true;
-}
-
-function drawCardBackground(context: CanvasRenderingContext2D) {
-  const photoX = CARD_BORDER;
-  const photoY = CARD_BORDER;
-  const photoWidth = CARD_WIDTH - CARD_BORDER * 2;
-  const photoHeight = CARD_HEIGHT - CARD_BORDER * 2;
-
-  context.fillStyle = INK;
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  context.fillStyle = BRAND.brandGlow;
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  context.fillStyle = INK;
-  context.fillRect(24, 24, CARD_WIDTH - 48, CARD_HEIGHT - 48);
-  context.fillStyle = BRAND.brandGlow;
-  context.fillRect(44, 44, CARD_WIDTH - 88, CARD_HEIGHT - 88);
-  context.fillStyle = INK;
-  context.fillRect(56, 56, CARD_WIDTH - 112, CARD_HEIGHT - 112);
-
-  return {
-    x: photoX,
-    y: photoY,
-    width: photoWidth,
-    height: photoHeight,
-  };
-}
-
-function drawCardChrome(context: CanvasRenderingContext2D, photoArea: PhotoArea) {
-  const overlayHeight = 285;
-  const overlayY = photoArea.y + photoArea.height - overlayHeight;
-  const dateWidth = 250;
-  const dateHeight = 70;
-
-  context.strokeStyle = BRAND.brandGlow;
-  context.lineWidth = 18;
-  context.strokeRect(photoArea.x - 2, photoArea.y - 2, photoArea.width + 4, photoArea.height + 4);
-  context.strokeStyle = INK;
-  context.lineWidth = 8;
-  context.strokeRect(photoArea.x + 18, photoArea.y + 18, photoArea.width - 36, photoArea.height - 36);
-
-  const gradient = context.createLinearGradient(0, overlayY - 90, 0, photoArea.y + photoArea.height);
-  gradient.addColorStop(0, "rgba(17, 17, 17, 0)");
-  gradient.addColorStop(0.32, "rgba(17, 17, 17, 0.72)");
-  gradient.addColorStop(1, "rgba(17, 17, 17, 0.96)");
-  context.fillStyle = gradient;
-  context.fillRect(photoArea.x, overlayY - 90, photoArea.width, overlayHeight + 90);
-
-  context.fillStyle = BRAND.brandGlow;
-  context.fillRect(photoArea.x + 34, overlayY + 24, photoArea.width - 68, 12);
-
-  context.fillStyle = BRAND.brandGlow;
-  context.fillRect(CARD_WIDTH / 2 - dateWidth / 2, overlayY + 58, dateWidth, dateHeight);
-  context.strokeStyle = INK;
-  context.lineWidth = 7;
-  context.strokeRect(CARD_WIDTH / 2 - dateWidth / 2 + 6, overlayY + 64, dateWidth - 12, dateHeight - 12);
-
-  drawPixelText(context, EVENT_DATE, CARD_WIDTH / 2, overlayY + 93, dateWidth - 36, 7, INK);
-  drawPixelText(context, "JS CHILE MEETUP", CARD_WIDTH / 2, overlayY + 185, photoArea.width - 92, 10, BRAND.brandGlow);
-
-  context.fillStyle = BRAND.brandGlow;
-  context.fillRect(photoArea.x + 34, photoArea.y + photoArea.height - 38, 118, 14);
-  context.fillRect(photoArea.x + photoArea.width - 152, photoArea.y + photoArea.height - 38, 118, 14);
-}
-
-function drawCoverImage(
-  context: CanvasRenderingContext2D,
-  image: CanvasImageSource,
-  sourceWidth: number,
-  sourceHeight: number,
-  area: PhotoArea,
-) {
-  const sourceRatio = sourceWidth / sourceHeight;
-  const targetRatio = area.width / area.height;
-  let sx = 0;
-  let sy = 0;
-  let sw = sourceWidth;
-  let sh = sourceHeight;
-
-  if (sourceRatio > targetRatio) {
-    sw = sourceHeight * targetRatio;
-    sx = (sourceWidth - sw) / 2;
-  } else {
-    sh = sourceWidth / targetRatio;
-    sy = (sourceHeight - sh) * 0.38;
-  }
-
-  context.drawImage(image, sx, sy, sw, sh, area.x, area.y, area.width, area.height);
-}
-
-function drawCard(context: CanvasRenderingContext2D, video: HTMLVideoElement) {
-  const photoArea = drawCardBackground(context);
-
-  drawComicVideo(context, video, photoArea.x, photoArea.y, photoArea.width, photoArea.height);
-  drawCardChrome(context, photoArea);
-}
-
-function drawCardWithPortrait(context: CanvasRenderingContext2D, image: HTMLImageElement) {
-  const photoArea = drawCardBackground(context);
-
-  drawCoverImage(context, image, image.naturalWidth, image.naturalHeight, photoArea);
-  drawCardChrome(context, photoArea);
-}
-
-function captureSourceImage(video: HTMLVideoElement) {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  const width = 1024;
-  const height = 1024;
-
-  if (!context) {
-    return null;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-
-  const sourceWidth = video.videoWidth;
-  const sourceHeight = video.videoHeight;
-  const sourceRatio = sourceWidth / sourceHeight;
-  const targetRatio = width / height;
-  let dx = 0;
-  let dy = 0;
-  let dw = width;
-  let dh = height;
-
-  if (sourceRatio > targetRatio) {
-    dh = width / sourceRatio;
-    dy = (height - dh) / 2;
-  } else {
-    dw = height * sourceRatio;
-    dx = (width - dw) / 2;
-  }
-
-  context.fillStyle = "#0f0f0f";
-  context.fillRect(0, 0, width, height);
-  context.translate(width, 0);
-  context.scale(-1, 1);
-  context.drawImage(video, 0, 0, sourceWidth, sourceHeight, dx, dy, dw, dh);
-
-  return canvas.toDataURL("image/jpeg", 0.92);
-}
-
-function loadImage(source: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new window.Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = source;
-  });
 }
 
 export default function PhotoCardStudio() {
@@ -459,7 +135,7 @@ export default function PhotoCardStudio() {
 
       setStatus({
         tone: "success",
-        text: "Cámara lista. Centra tu cara y captura la card.",
+        text: "Cámara lista. Centra tu cara y captura tu agente.",
       });
     } catch {
       setStatus({
@@ -534,7 +210,7 @@ export default function PhotoCardStudio() {
     };
   }, [cooldownUntil]);
 
-  const drawLocalFallback = (video: HTMLVideoElement) => {
+  const drawLocalFallback = async (video: HTMLVideoElement) => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
 
@@ -542,6 +218,7 @@ export default function PhotoCardStudio() {
       return;
     }
 
+    await preloadFonts();
     canvas.width = CARD_WIDTH;
     canvas.height = CARD_HEIGHT;
     drawCard(context, video);
@@ -622,7 +299,7 @@ export default function PhotoCardStudio() {
       setIsGenerating(true);
       setStatus({
         tone: "info",
-        text: "Generando retrato 16-bit con IA. Esto puede tardar unos segundos.",
+        text: "Activando agente neural... esto puede tardar unos segundos.",
       });
 
       const response = await fetch("/api/generate-card", {
@@ -653,6 +330,7 @@ export default function PhotoCardStudio() {
       }
 
       const portrait = await loadImage(data.imageDataUrl);
+      await preloadFonts();
       canvas.width = CARD_WIDTH;
       canvas.height = CARD_HEIGHT;
       drawCardWithPortrait(context, portrait);
@@ -661,7 +339,7 @@ export default function PhotoCardStudio() {
       setNow(Date.now());
       setStatus({
         tone: "success",
-        text: "Retrato 16-bit generado con IA. Podrás generar otro en 60s.",
+        text: "Retrato neural generado. Podrás generar otro en 60s.",
       });
     } catch {
       if (fallbackVideo) {
@@ -685,7 +363,7 @@ export default function PhotoCardStudio() {
 
     const link = document.createElement("a");
     link.href = capturedImage;
-    link.download = "js-chile-meetup-16bit-card.png";
+    link.download = "neura-agent-card.png";
     link.click();
   };
 

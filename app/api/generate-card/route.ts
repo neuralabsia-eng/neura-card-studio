@@ -13,14 +13,29 @@ const DEV_UNLOCK_COOKIE = "js_chile_dev_unlock";
 const generationCooldowns = new Map<string, number>();
 
 const prompt = `
-Transform the provided selfie into a premium 16-bit pixel portrait for a vertical collectible trading card.
-Preserve the person's likeness, face shape, hair, expression, pose, skin tone relationships, and main identifying features.
-The output must look like intentionally hand-crafted 16-bit pixel art, not a filtered photograph.
-Use chunky pixel shapes, crisp stair-stepped edges, simplified facial features, graphic clusters of light and shadow, and controlled dithering.
-Use a constrained JavaScript-inspired palette: black, white, warm gray, dark gray, and JavaScript yellow #f7df1e.
-Make it a centered bust portrait with a clean simple background, strong silhouette, enough headroom, visible shoulders, and empty lower space for an event overlay.
-Do not add text, logos, dates, captions, labels, borders, or extra people.
-Avoid photorealism, smooth gradients, painterly brush strokes, anime style, 3D render, and realistic camera blur.
+Transform the provided selfie into a futuristic AI agent portrait for a vertical collectible card.
+Preserve the person's likeness, face shape, hair, expression, pose, and skin tone relationships — they must remain clearly recognizable.
+
+Style: digital AI persona / neural avatar. Think holographic agent profile in a sci-fi HUD. Not anime, not Disney, not photorealistic.
+
+Visual treatment:
+- Subtle scan-line texture and faint neural network overlays around the silhouette
+- Soft glowing rim light in violet (#7C3AED) and magenta (#C026D3) outlining head and shoulders
+- Cool dark background fading to deep navy (#0A0E1A) with a faint hexagonal or circuit grid
+- Skin retains natural midtones bathed in subtle violet ambient light
+- Eyes catch a small violet highlight suggesting activation
+- Optional: faint HUD tick marks or brackets framing the bust (very subtle)
+
+Composition:
+- Centered bust portrait, frontal, slight headroom
+- Visible shoulders, empty lower third for a card overlay (do NOT draw text/labels there)
+- Clean negative space around the silhouette
+
+Constraints:
+- Do NOT add text, logos, dates, captions, labels, borders, or other people
+- Avoid yellow tones (deliberate departure from source style)
+- Avoid full photorealism, painterly brushstrokes, anime, chibi, cartoon, 3D-render-clay
+- Output must feel like a digital agent persona / synthetic intelligence portrait
 `.trim();
 
 type GenerateRequest = {
@@ -241,7 +256,7 @@ export async function POST(request: Request) {
   if (!isEventGateOpen(request)) {
     return jsonResponse(
       {
-        error: "La generación estará disponible el 30 de abril.",
+        error: "La generación estará disponible cuando inicie el evento.",
       },
       { status: 403 },
     );
