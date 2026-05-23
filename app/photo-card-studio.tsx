@@ -414,10 +414,10 @@ export default function PhotoCardStudio() {
           </div>
           <div className="space-y-4">
             <h1 className="text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
-              Disponible el 30 de abril
+              {EVENT_COPY.gateTitle}
             </h1>
             <p className="mx-auto max-w-xl text-base leading-7 text-muted sm:text-lg">
-              La cámara y generación de cards se habilitarán automáticamente para el meetup.
+              {EVENT_COPY.gateSubtitle}
             </p>
           </div>
 
@@ -435,24 +435,24 @@ export default function PhotoCardStudio() {
             ))}
           </div>
         </section>
-        <footer className="border-t border-white/10 px-5 py-5 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
-          Creado por{" "}
+        <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
+          {EVENT_COPY.footerOriginal}{" "}
           <a
-            href="https://erasmoh.dev"
+            href={EVENT_COPY.footerOriginalUrl}
             target="_blank"
             rel="noreferrer"
-            className="font-black text-brand-glow underline decoration-brand-glow/40 underline-offset-4 transition hover:text-brand"
+            className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
           >
-            @ErasmoHernandez
+            {EVENT_COPY.footerOriginalHandle}
           </a>
-          , con amor para la comunidad JS Chile ·{" "}
+          {" · "}{EVENT_COPY.footerRebrand}{" "}
           <a
-            href="https://erasmoh.dev"
+            href={EVENT_COPY.footerRebrandUrl}
             target="_blank"
             rel="noreferrer"
-            className="font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
+            className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
           >
-            erasmoh.dev
+            {EVENT_COPY.footerRebrandName}
           </a>
         </footer>
       </main>
@@ -595,24 +595,24 @@ export default function PhotoCardStudio() {
           </div>
         </div>
       </section>
-      <footer className="border-t border-white/10 px-5 py-5 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
-        Creado por{" "}
+      <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
+        {EVENT_COPY.footerOriginal}{" "}
         <a
-          href="https://erasmoh.dev"
+          href={EVENT_COPY.footerOriginalUrl}
           target="_blank"
           rel="noreferrer"
-          className="font-black text-brand-glow underline decoration-brand-glow/40 underline-offset-4 transition hover:text-brand"
+          className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
         >
-          @ErasmoHernandez
+          {EVENT_COPY.footerOriginalHandle}
         </a>
-        , con amor para la comunidad JS Chile ·{" "}
+        {" · "}{EVENT_COPY.footerRebrand}{" "}
         <a
-          href="https://erasmoh.dev"
+          href={EVENT_COPY.footerRebrandUrl}
           target="_blank"
           rel="noreferrer"
-          className="font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
+          className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
         >
-          erasmoh.dev
+          {EVENT_COPY.footerRebrandName}
         </a>
       </footer>
       {isShareDialogOpen && (
