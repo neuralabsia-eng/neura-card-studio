@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
+import { isEventGateOpen } from "../../lib/event-gate";
 import {
   createWallImageRecord,
   findWallImageByHash,
@@ -87,6 +88,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isEventGateOpen(request)) {
+    return Response.json(
+      { error: "El muro estará disponible durante el evento." },
+      { status: 403 },
+    );
+  }
+
   let body: ShareToWallRequest;
 
   try {

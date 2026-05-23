@@ -11,12 +11,16 @@ import {
   CARD_WIDTH,
   CARD_HEIGHT,
 } from "./lib/canvas/draw-card";
+import {
+  DEV_UNLOCK_COOKIE,
+  getEventUnlockTime,
+  hasCookieClient,
+  setDevUnlockCookieClient,
+  clearDevUnlockCookieClient,
+} from "./lib/event-gate";
+import { EVENT_COPY } from "./lib/event-copy";
 
 const COOLDOWN_MS = 60_000;
-const DEFAULT_EVENT_UNLOCK_AT = "2026-04-30T00:00:00-04:00";
-const EVENT_UNLOCK_AT = process.env.NEXT_PUBLIC_EVENT_UNLOCK_AT ?? DEFAULT_EVENT_UNLOCK_AT;
-const DEV_UNLOCK_COOKIE = "js_chile_dev_unlock";
-const EVENT_DATE = "NEURA.LAB";  // placeholder — actualizar en Fase 3 con event-copy.ts
 
 type StatusMessage = {
   tone: "info" | "error" | "success";
@@ -26,24 +30,6 @@ type StatusMessage = {
 function isLikelyMobileDevice() {
   if (typeof navigator === "undefined") return false;
   return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
-}
-
-function getEventUnlockTime() {
-  const t = Date.parse(EVENT_UNLOCK_AT);
-  return Number.isNaN(t) ? Date.parse(DEFAULT_EVENT_UNLOCK_AT) : t;
-}
-
-function hasCookie(name: string) {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split("; ").some((c) => c.startsWith(`${name}=`));
-}
-
-function setDevUnlockCookie() {
-  document.cookie = `${DEV_UNLOCK_COOKIE}=1; path=/; max-age=2592000; SameSite=Lax`;
-}
-
-function clearDevUnlockCookie() {
-  document.cookie = `${DEV_UNLOCK_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
 }
 
 function formatCountdown(ms: number) {
@@ -77,7 +63,7 @@ export default function PhotoCardStudio() {
   const [isSharing, setIsSharing] = useState(false);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
-    text: "Toca Activar cámara para que el navegador solicite permiso de acceso.",
+    text: EVENT_COPY.statusDefault,
   });
   const eventUnlockTime = getEventUnlockTime();
   const gateLocked = now < eventUnlockTime && !devUnlocked;
@@ -135,7 +121,7 @@ export default function PhotoCardStudio() {
 
       setStatus({
         tone: "success",
-        text: "Cámara lista. Centra tu cara y captura tu agente.",
+        text: EVENT_COPY.cameraReady,
       });
     } catch {
       setStatus({
@@ -154,18 +140,18 @@ export default function PhotoCardStudio() {
       const params = new URLSearchParams(window.location.search);
 
       if (params.get("dev") === "1") {
-        setDevUnlockCookie();
+        setDevUnlockCookieClient();
         setDevUnlocked(true);
         return;
       }
 
       if (params.get("dev_lock") === "1") {
-        clearDevUnlockCookie();
+        clearDevUnlockCookieClient();
         setDevUnlocked(false);
         return;
       }
 
-      setDevUnlocked(hasCookie(DEV_UNLOCK_COOKIE));
+      setDevUnlocked(hasCookieClient(DEV_UNLOCK_COOKIE));
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -221,7 +207,7 @@ export default function PhotoCardStudio() {
     await preloadFonts();
     canvas.width = CARD_WIDTH;
     canvas.height = CARD_HEIGHT;
-    drawCard(context, video);
+    drawCard(context, video, EVENT_COPY.canvasEventLabel);
     setCapturedImage(canvas.toDataURL("image/png"));
   };
 
@@ -299,7 +285,7 @@ export default function PhotoCardStudio() {
       setIsGenerating(true);
       setStatus({
         tone: "info",
-        text: "Activando agente neural... esto puede tardar unos segundos.",
+        text: EVENT_COPY.generating,
       });
 
       const response = await fetch("/api/generate-card", {
@@ -333,13 +319,13 @@ export default function PhotoCardStudio() {
       await preloadFonts();
       canvas.width = CARD_WIDTH;
       canvas.height = CARD_HEIGHT;
-      drawCardWithPortrait(context, portrait);
+      drawCardWithPortrait(context, portrait, EVENT_COPY.canvasEventLabel);
       setCapturedImage(canvas.toDataURL("image/png"));
       setCooldownUntil(Date.now() + COOLDOWN_MS);
       setNow(Date.now());
       setStatus({
         tone: "success",
-        text: "Retrato neural generado. Podrás generar otro en 60s.",
+        text: EVENT_COPY.generatedSuccess,
       });
     } catch {
       if (fallbackVideo) {
@@ -363,7 +349,7 @@ export default function PhotoCardStudio() {
 
     const link = document.createElement("a");
     link.href = capturedImage;
-    link.download = "neura-agent-card.png";
+    link.download = EVENT_COPY.downloadFilename;
     link.click();
   };
 
@@ -384,7 +370,7 @@ export default function PhotoCardStudio() {
       setIsSharing(true);
       setStatus({
         tone: "info",
-        text: "Enviando la imagen generada al muro del evento.",
+        text: "Enviando tu retrato neural al muro...",
       });
 
       const response = await fetch("/api/wall", {
@@ -407,7 +393,7 @@ export default function PhotoCardStudio() {
       setIsShareDialogOpen(false);
       setStatus({
         tone: "success",
-        text: "Imagen enviada al muro del evento. Gracias por compartir tu card.",
+        text: EVENT_COPY.shareSuccess,
       });
     } catch (error) {
       setStatus({
@@ -424,7 +410,7 @@ export default function PhotoCardStudio() {
       <main className="flex min-h-dvh flex-col bg-bg text-white">
         <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-5 py-10 text-center">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-glow/50 bg-brand-glow/10 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.24em] text-brand-glow">
-            JS Chile Meetup · {EVENT_DATE}
+            {EVENT_COPY.gateBadge}
           </div>
           <div className="space-y-4">
             <h1 className="text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
@@ -478,7 +464,7 @@ export default function PhotoCardStudio() {
       <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-5 py-6 sm:px-8 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:py-10">
         <div className="flex flex-col gap-5">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-glow/50 bg-brand-glow/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.24em] text-brand-glow">
-            JS Chile Meetup
+            {EVENT_COPY.heroChip}
           </div>
           <div className="space-y-4">
             <h1 className="max-w-xl text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
@@ -540,7 +526,7 @@ export default function PhotoCardStudio() {
                 disabled={!capturedImage || isSharing}
                 className="rounded-lg border border-white/20 px-3 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:border-white/50 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
-                {isSharing ? "Enviando..." : "Enviar al muro"}
+                {isSharing ? "Enviando..." : EVENT_COPY.shareDialogTitle}
               </button>
             </div>
             {cooldownRemainingSeconds > 0 && (
@@ -565,7 +551,7 @@ export default function PhotoCardStudio() {
               {capturedImage ? (
                 <Image
                   src={capturedImage}
-                  alt="Card final 16-bit de JS Chile Meetup"
+                  alt="Tu retrato neural Neura.Lab"
                   fill
                   unoptimized
                   className="object-cover"
@@ -573,7 +559,7 @@ export default function PhotoCardStudio() {
               ) : (
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pb-5 pt-20 text-center">
                   <span className="mb-2 inline-flex bg-brand-glow px-3 py-1 text-xs font-black tracking-[0.18em] text-bg">
-                    {EVENT_DATE}
+                    {EVENT_COPY.eventDateBadge}
                   </span>
                   <p className="text-xl font-black tracking-[0.02em] text-brand-glow">
                     JS CHILE MEETUP
@@ -664,7 +650,7 @@ export default function PhotoCardStudio() {
                 disabled={isSharing}
                 className="rounded-xl bg-brand-glow px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-bg transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSharing ? "Enviando..." : "Sí, enviar"}
+                {isSharing ? EVENT_COPY.shareSending : EVENT_COPY.shareConfirm}
               </button>
             </div>
           </div>

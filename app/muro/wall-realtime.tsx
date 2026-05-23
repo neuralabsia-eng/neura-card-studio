@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
 import type { SupabaseBrowserConfig, WallImageRecord } from "../lib/wall";
+import { EVENT_COPY } from "../lib/event-copy";
 
 type WallRealtimeProps = {
   configured: boolean;
   initialImages: WallImageRecord[];
   supabaseConfig: SupabaseBrowserConfig | null;
+  isPresenter?: boolean;
+  isLive?: boolean;
 };
 
 type WallApiResponse = {
@@ -26,7 +29,7 @@ function hashString(value: string) {
   return hash;
 }
 
-function getCardStyle(image: WallImageRecord, index: number, total: number): CSSProperties {
+function getCardStyle(image: WallImageRecord, index: number, total: number, isPresenter = false): CSSProperties {
   const hash = hashString(`${image.id}-${image.updated_at}`);
   const columns = Math.max(1, Math.ceil(Math.sqrt(total * 1.35)));
   const rows = Math.max(1, Math.ceil(total / columns));
@@ -36,7 +39,9 @@ function getCardStyle(image: WallImageRecord, index: number, total: number): CSS
   const cellHeight = 56 / rows;
   const jitterX = (((hash >> 3) % 100) / 100 - 0.5) * cellWidth * 0.55;
   const jitterY = (((hash >> 11) % 100) / 100 - 0.5) * cellHeight * 0.55;
-  const rotation = (hash % 35) - 17;
+  const rotRange = isPresenter ? 11 : 35;
+  const rotOffset = isPresenter ? 5 : 17;
+  const rotation = (hash % rotRange) - rotOffset;
   const left = Math.max(10, Math.min(90, 12 + cellWidth * (column + 0.5) + jitterX));
   const top = Math.max(24, Math.min(82, 26 + cellHeight * (row + 0.5) + jitterY));
 
@@ -77,13 +82,13 @@ function WallImageCounter({ count }: { count: number }) {
         {String(count).padStart(3, "0")}
       </div>
       <div className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-muted sm:text-xs">
-        agentes en el muro
+        {EVENT_COPY.wallCounterLabel}
       </div>
     </div>
   );
 }
 
-export default function WallRealtime({ configured, initialImages, supabaseConfig }: WallRealtimeProps) {
+export default function WallRealtime({ configured, initialImages, supabaseConfig, isPresenter = false, isLive = false }: WallRealtimeProps) {
   const [images, setImages] = useState(() => initialImages);
 
   useEffect(() => {
@@ -115,10 +120,11 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
       }
     };
 
-    const interval = window.setInterval(refreshImages, 3500);
+    const pollMs = (isLive || isPresenter) ? 1500 : 3500;
+    const interval = window.setInterval(refreshImages, pollMs);
 
     return () => window.clearInterval(interval);
-  }, [configured]);
+  }, [configured, isLive, isPresenter]);
 
   useEffect(() => {
     if (!configured || !supabaseConfig) {
@@ -162,8 +168,8 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
     return (
       <div className="relative z-10 flex min-h-dvh items-center justify-center p-6 text-center text-muted">
         <div className="space-y-2">
-          <p className="text-brand-glow font-mono text-sm uppercase tracking-widest">NEURA.LAB // AGENT WALL</p>
-          <p>Falta configurar Supabase para cargar el muro.</p>
+          <p className="text-brand-glow font-mono text-sm uppercase tracking-widest">{EVENT_COPY.wallHudLabel}</p>
+          <p>{EVENT_COPY.wallConfigError}</p>
         </div>
       </div>
     );
@@ -175,10 +181,10 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
         <WallImageCounter count={images.length} />
         <div className="relative z-10 flex min-h-dvh items-center justify-center p-8 text-center">
           <div className="max-w-md space-y-3">
-            <p className="font-mono text-xs uppercase tracking-widest text-brand-glow">NEURA.LAB // AGENT WALL</p>
-            <p className="text-3xl font-black text-gradient-brand">Aún no hay agentes en el muro</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-brand-glow">{EVENT_COPY.wallHudLabel}</p>
+            <p className="text-3xl font-black text-gradient-brand">{EVENT_COPY.wallEmpty}</p>
             <p className="text-sm leading-6 text-muted">
-              Cuando alguien autorice compartir su retrato neural, aparecerá aquí.
+{EVENT_COPY.wallEmptyHelp}
             </p>
           </div>
         </div>
@@ -193,8 +199,8 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
         {images.map((image, index) => (
           <article
             key={image.id}
-            style={getCardStyle(image, index, images.length)}
-            className="absolute w-[38vw] min-w-[132px] max-w-[240px] overflow-hidden rounded-[1.15rem] bg-surface shadow-[0_24px_70px_rgba(124,58,237,0.25)] transition duration-300 hover:z-50 hover:scale-110 sm:w-[24vw] md:w-[220px]"
+            style={getCardStyle(image, index, images.length, isPresenter)}
+            className={`absolute w-[38vw] min-w-[132px] max-w-[240px] overflow-hidden rounded-[1.15rem] bg-surface shadow-[0_24px_70px_rgba(124,58,237,0.25)] transition duration-300 sm:w-[24vw] md:w-[220px] ${isPresenter ? "" : "hover:z-50 hover:scale-110"}`}
           >
             <div className="relative aspect-[2/3]">
               <Image

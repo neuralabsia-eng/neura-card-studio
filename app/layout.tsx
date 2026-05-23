@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Neura.Lab · AI Agent Portrait Studio",
   description:
-    "Captura tu selfie y conviértete en un agente IA Neura — retrato neural generado para eventos Neura.Lab.",
+    "Construye tu primer Agente IA desde cero — Taller Neura.Lab × Universidad San Pablo. Captura tu retrato neural.",
 };
 
 export default function RootLayout({

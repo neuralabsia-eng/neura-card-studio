@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { EVENT_COPY } from "../lib/event-copy";
 import {
   getSupabaseBrowserConfig,
   listWallImages,
@@ -43,8 +44,17 @@ async function getWallPageState(): Promise<WallPageState> {
   }
 }
 
-export default async function MuroPage() {
-  const state = await getWallPageState();
+export default async function MuroPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [state, params] = await Promise.all([
+    getWallPageState(),
+    searchParams,
+  ]);
+  const isPresenter = params.presenter === "1";
+  const isLive = params.live === "1" || isPresenter;
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-bg text-foreground">
@@ -57,39 +67,43 @@ export default async function MuroPage() {
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-50 flex items-start justify-between gap-6 bg-gradient-to-b from-bg/92 via-bg/55 to-transparent p-5 pb-20 sm:p-8 sm:pb-24">
         <h1 className="max-w-[calc(100%-8rem)] font-mono text-4xl font-black uppercase leading-[0.98] tracking-[0.08em] text-gradient-brand [font-variant-ligatures:none] [text-shadow:0_0_32px_rgba(124,58,237,0.6)] sm:max-w-[calc(100%-11rem)] sm:text-6xl lg:text-7xl">
-          MURO DE AGENTES · NEURA.LAB
+          {EVENT_COPY.wallTitle} · {EVENT_COPY.universityName}
         </h1>
-        <div className="shrink-0 bg-surface border border-brand/20 p-2 shadow-[0_18px_55px_rgba(124,58,237,0.3)] sm:p-3">
-          <Image
-            src="/qr.png"
-            alt="QR para generar tu retrato neural"
-            width={144}
-            height={144}
-            priority
-            className="h-24 w-24 object-contain sm:h-36 sm:w-36"
-          />
-        </div>
+        {!isPresenter && (
+          <div className="shrink-0 bg-surface border border-brand/20 p-2 shadow-[0_18px_55px_rgba(124,58,237,0.3)] sm:p-3">
+            <Image
+              src="/qr.png"
+              alt={EVENT_COPY.qrAlt}
+              width={144}
+              height={144}
+              priority
+              className="h-24 w-24 object-contain sm:h-36 sm:w-36"
+            />
+          </div>
+        )}
       </header>
 
       <WallRealtime
         configured={state.configured}
         initialImages={state.images}
         supabaseConfig={state.supabaseConfig}
+        isPresenter={isPresenter}
+        isLive={isLive}
       />
 
       <footer className="pointer-events-auto absolute inset-x-0 bottom-0 z-50 border-t border-brand/10 bg-bg/75 px-5 py-4 text-center font-mono text-xs leading-6 text-muted backdrop-blur-sm sm:text-sm">
-        Original por{" "}
+        {EVENT_COPY.footerOriginal}{" "}
         <a
-          href="https://erasmoh.dev"
+          href={EVENT_COPY.footerOriginalUrl}
           target="_blank"
           rel="noreferrer"
           className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
         >
           @ErasmoHernandez
         </a>
-        {" "}· Rebrand por{" "}
+        {" "}· {EVENT_COPY.footerRebrand}{" "}
         <a
-          href="https://neuralab.lat"
+          href={EVENT_COPY.footerRebrandUrl}
           target="_blank"
           rel="noreferrer"
           className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"

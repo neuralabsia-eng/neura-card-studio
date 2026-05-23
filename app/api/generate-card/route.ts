@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { isEventGateOpen } from "../../lib/event-gate";
 
 export const runtime = "nodejs";
 
@@ -7,9 +8,6 @@ const DEFAULT_GATEWAY_MODEL = "google/gemini-3-pro-image";
 const DEFAULT_OPENAI_MODEL = "gpt-image-1";
 const MAX_IMAGE_LENGTH = 10 * 1024 * 1024;
 const AI_GENERATION_COOLDOWN_MS = 60_000;
-const DEFAULT_EVENT_UNLOCK_AT = "2026-04-30T00:00:00-04:00";
-const EVENT_UNLOCK_AT = process.env.NEXT_PUBLIC_EVENT_UNLOCK_AT ?? DEFAULT_EVENT_UNLOCK_AT;
-const DEV_UNLOCK_COOKIE = "js_chile_dev_unlock";
 const generationCooldowns = new Map<string, number>();
 
 const prompt = `
@@ -53,20 +51,6 @@ function getClientKey(request: Request) {
     request.headers.get("cf-connecting-ip") ??
     "local"
   );
-}
-
-function getEventUnlockTime() {
-  const configuredTime = Date.parse(EVENT_UNLOCK_AT);
-
-  return Number.isNaN(configuredTime) ? Date.parse(DEFAULT_EVENT_UNLOCK_AT) : configuredTime;
-}
-
-function hasDevUnlockCookie(request: Request) {
-  return request.headers.get("cookie")?.split("; ").some((cookie) => cookie === `${DEV_UNLOCK_COOKIE}=1`) ?? false;
-}
-
-function isEventGateOpen(request: Request) {
-  return Date.now() >= getEventUnlockTime() || hasDevUnlockCookie(request);
 }
 
 function isValidImageDataUrl(value: unknown): value is string {
@@ -256,7 +240,7 @@ export async function POST(request: Request) {
   if (!isEventGateOpen(request)) {
     return jsonResponse(
       {
-        error: "La generación estará disponible cuando inicie el evento.",
+        error: "La generación estará disponible cuando inicie el taller.",
       },
       { status: 403 },
     );
