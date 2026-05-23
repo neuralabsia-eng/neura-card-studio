@@ -70,12 +70,14 @@ function mergeWallImages(currentImages: WallImageRecord[], incomingImages: WallI
 
 function WallImageCounter({ count }: { count: number }) {
   return (
-    <div className="pointer-events-none absolute left-5 top-36 z-50 bg-black/70 px-4 py-3 font-mono text-[#f7df1e] shadow-[6px_6px_0_#000] backdrop-blur-sm sm:left-8 sm:top-48 sm:px-5 sm:py-4">
-      <div className="text-4xl font-black leading-none tracking-[0.08em] sm:text-6xl">
+    <div className="pointer-events-none absolute left-5 top-36 z-50 bg-surface/80 px-4 py-3 font-mono backdrop-blur-sm sm:left-8 sm:top-48 sm:px-5 sm:py-4 border border-brand/20 rounded-lg"
+      style={{ boxShadow: "0 8px 32px rgb(124 58 237 / 0.30), 0 0 64px rgb(124 58 237 / 0.15)" }}
+    >
+      <div className="text-4xl font-black leading-none tracking-[0.08em] text-gradient-brand sm:text-6xl">
         {String(count).padStart(3, "0")}
       </div>
-      <div className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-100 sm:text-xs">
-        imágenes en el muro
+      <div className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-muted sm:text-xs">
+        agentes en el muro
       </div>
     </div>
   );
@@ -158,8 +160,11 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
 
   if (!configured) {
     return (
-      <div className="relative z-10 flex min-h-dvh items-center justify-center p-6 text-center text-yellow-100">
-        Falta configurar Supabase para cargar el muro.
+      <div className="relative z-10 flex min-h-dvh items-center justify-center p-6 text-center text-muted">
+        <div className="space-y-2">
+          <p className="text-brand-glow font-mono text-sm uppercase tracking-widest">NEURA.LAB // AGENT WALL</p>
+          <p>Falta configurar Supabase para cargar el muro.</p>
+        </div>
       </div>
     );
   }
@@ -170,9 +175,10 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
         <WallImageCounter count={images.length} />
         <div className="relative z-10 flex min-h-dvh items-center justify-center p-8 text-center">
           <div className="max-w-md space-y-3">
-            <p className="text-3xl font-black text-[#f7df1e]">Aún no hay cards en el muro</p>
-            <p className="text-sm leading-6 text-zinc-400">
-              Cuando alguien autorice compartir su imagen generada, aparecerá aquí.
+            <p className="font-mono text-xs uppercase tracking-widest text-brand-glow">NEURA.LAB // AGENT WALL</p>
+            <p className="text-3xl font-black text-gradient-brand">Aún no hay agentes en el muro</p>
+            <p className="text-sm leading-6 text-muted">
+              Cuando alguien autorice compartir su retrato neural, aparecerá aquí.
             </p>
           </div>
         </div>
@@ -188,12 +194,12 @@ export default function WallRealtime({ configured, initialImages, supabaseConfig
           <article
             key={image.id}
             style={getCardStyle(image, index, images.length)}
-            className="absolute w-[38vw] min-w-[132px] max-w-[240px] overflow-hidden rounded-[1.15rem] bg-black shadow-[0_24px_70px_rgba(0,0,0,0.6)] transition duration-300 hover:z-50 hover:scale-110 sm:w-[24vw] md:w-[220px]"
+            className="absolute w-[38vw] min-w-[132px] max-w-[240px] overflow-hidden rounded-[1.15rem] bg-surface shadow-[0_24px_70px_rgba(124,58,237,0.25)] transition duration-300 hover:z-50 hover:scale-110 sm:w-[24vw] md:w-[220px]"
           >
             <div className="relative aspect-[2/3]">
               <Image
                 src={image.image_url}
-                alt="Card compartida en el muro del evento"
+                alt="Retrato neural compartido en el muro del evento"
                 fill
                 sizes="(max-width: 640px) 38vw, (max-width: 768px) 24vw, 220px"
                 unoptimized

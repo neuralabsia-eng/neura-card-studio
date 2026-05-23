@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+/* =====================================================================
+   Neura.Lab brand tokens
+   Sincronizar con app/lib/theme.ts (canvas API usa los mismos hex).
+   ===================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand spectrum */
+  --color-brand:        #7C3AED;
+  --color-brand-glow:   #A855F7;
+  --color-brand-deep:   #C026D3;
+  --color-brand-soft:   #1A1230;
+
+  /* Surfaces */
+  --color-bg:           #0A0E1A;
+  --color-surface:      #0F131F;
+  --color-surface-2:    #161B2B;
+  --color-border:       rgba(168, 85, 247, 0.18);
+
+  /* Text */
+  --color-text:         #F8FAFC;
+  --color-text-muted:   #94A3B8;
+  --color-text-faint:   #475569;
+
+  /* Effects */
+  --gradient-brand:     linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #C026D3 100%);
+  --glow-brand:         0 8px 32px rgb(124 58 237 / 0.30), 0 0 64px rgb(124 58 237 / 0.15);
+  --glow-brand-strong:  0 8px 32px rgb(124 58 237 / 0.50), 0 0 96px rgb(168 85 247 / 0.30);
+
+  /* Compat aliases */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-background:   var(--background);
+  --color-foreground:   var(--foreground);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand:        var(--color-brand);
+  --color-brand-glow:   var(--color-brand-glow);
+  --color-brand-deep:   var(--color-brand-deep);
+  --color-brand-soft:   var(--color-brand-soft);
+
+  --color-bg:           var(--color-bg);
+  --color-surface:      var(--color-surface);
+  --color-surface-2:    var(--color-surface-2);
+
+  --color-muted:        var(--color-text-muted);
+  --color-faint:        var(--color-text-faint);
+
+  --font-sans:          var(--font-inter);
+  --font-display:       var(--font-space-grotesk);
+  --font-mono:          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Subtle radial glow + hero grid */
+  background-image:
+    radial-gradient(ellipse at top, rgba(124, 58, 237, 0.10), transparent 50%),
+    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+  background-size: auto, 64px 64px, 64px 64px;
+  background-position: 0 0, -1px -1px, -1px -1px;
+}
+
+/* Gradient text utility — aplica a headings principales */
+.text-gradient-brand {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Glassmorphism card */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 0.75rem;
 }
