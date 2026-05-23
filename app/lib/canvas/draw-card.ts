@@ -105,66 +105,76 @@ export function drawNeuralVideo(
   const sh = video.videoHeight;
   if (sw === 0 || sh === 0) return;
 
+  // Cover crop: fill entire photo area, cropping excess video edges
   const sRatio = sw / sh;
   const tRatio = width / height;
-  let dX = x, dY = y, dW = width, dH = height;
-
+  let srcX = 0, srcY = 0, srcW = sw, srcH = sh;
   if (sRatio > tRatio) {
-    dH = width / sRatio;
-    dY = y + (height - dH) / 2;
+    // video wider than target → crop sides, keep full height
+    srcW = sh * tRatio;
+    srcX = (sw - srcW) / 2;
   } else {
-    dW = height * sRatio;
-    dX = x + (width - dW) / 2;
+    // video taller than target → crop bottom, bias face toward top
+    srcH = sw / tRatio;
+    srcY = (sh - srcH) * 0.28;
   }
 
-  // Downsample to 188px wide → pixelation base (neural scan aesthetic)
-  const lowW = 188;
-  const lowH = Math.round(lowW / sRatio);
-  const px = document.createElement("canvas");
-  px.width = lowW; px.height = lowH;
-  const pctx = px.getContext("2d");
+  // Low-res canvas at the same aspect ratio as the photo area
+  const lowW = 192;
+  const lowH = Math.round(lowW * height / width);
+  const pxCv = document.createElement("canvas");
+  pxCv.width = lowW; pxCv.height = lowH;
+  const pctx = pxCv.getContext("2d");
   if (!pctx) return;
 
-  // Mirror selfie horizontally
+  // Mirror selfie + pre-blur + contrast boost before quantizing
   pctx.translate(lowW, 0);
   pctx.scale(-1, 1);
-  pctx.drawImage(video, 0, 0, sw, sh, 0, 0, lowW, lowH);
+  pctx.filter = "blur(2px) contrast(1.45) brightness(1.18)";
+  pctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, lowW, lowH);
+  pctx.filter = "none";
 
   const pixels = pctx.getImageData(0, 0, lowW, lowH);
   const src = new Uint8ClampedArray(pixels.data);
 
   for (let i = 0; i < pixels.data.length; i += 4) {
-    const pixel = i / 4;
-    const px_ = pixel % lowW;
-    const py_ = Math.floor(pixel / lowW);
+    const px_ = (i / 4) % lowW;
+    const py_ = Math.floor(i / 4 / lowW);
     const r = pixels.data[i], g = pixels.data[i + 1], b = pixels.data[i + 2];
     const light = luminance(r, g, b);
+
     const ri = px_ < lowW - 1 ? (py_ * lowW + px_ + 1) * 4 : i;
     const bi = py_ < lowH - 1 ? ((py_ + 1) * lowW + px_) * 4 : i;
     const edge =
       Math.abs(light - luminance(src[ri], src[ri + 1], src[ri + 2])) +
       Math.abs(light - luminance(src[bi], src[bi + 1], src[bi + 2]));
 
-    // 5-color neural palette: edge → brand violet, luminance bands for the rest
-    if (edge > 60) {
+    if (edge > 48) {
       paintPixel(pixels.data, i, NEURAL_PALETTE.brand);
-    } else if (light < 45) {
+    } else if (light < 70) {
       paintPixel(pixels.data, i, NEURAL_PALETTE.ink);
-    } else if (light > 210) {
-      paintPixel(pixels.data, i, NEURAL_PALETTE.highlight);
-    } else if (light > 155) {
+    } else if (light > 148) {
       paintPixel(pixels.data, i, NEURAL_PALETTE.glow);
-    } else if (light > 95) {
-      paintPixel(pixels.data, i, NEURAL_PALETTE.midtone);
     } else {
-      paintPixel(pixels.data, i, NEURAL_PALETTE.ink);
+      paintPixel(pixels.data, i, NEURAL_PALETTE.midtone);
     }
   }
 
   pctx.putImageData(pixels, 0, 0);
+
+  // Scale up: pixelated neural scan aesthetic
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(px, dX, dY, dW, dH);
+  ctx.drawImage(pxCv, x, y, width, height);
   ctx.imageSmoothingEnabled = true;
+
+  // Scanline overlay for HUD / CRT feel
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = BRAND.bg;
+  for (let sy = y; sy < y + height; sy += 3) {
+    ctx.fillRect(x, sy, width, 1);
+  }
+  ctx.restore();
 }
 
 // ─── Card background (Neura neural style) ────────────────────────────────────
