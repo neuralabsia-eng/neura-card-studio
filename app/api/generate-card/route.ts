@@ -11,29 +11,32 @@ const AI_GENERATION_COOLDOWN_MS = 60_000;
 const generationCooldowns = new Map<string, number>();
 
 const prompt = `
-Transform the provided selfie into a futuristic AI agent portrait for a vertical collectible card.
-Preserve the person's likeness, face shape, hair, expression, pose, and skin tone relationships — they must remain clearly recognizable.
+This is an EDIT of the provided selfie. Apply a futuristic AI agent visual style while keeping the person clearly recognizable.
 
-Style: digital AI persona / neural avatar. Think holographic agent profile in a sci-fi HUD. Not anime, not Disney, not photorealistic.
+IDENTITY — preserve exactly:
+- Face geometry: jawline, cheekbones, nose shape, eye spacing and shape
+- All facial features: glasses if present, beard/stubble if present, eyebrows
+- Hair color, length, and general style
+- Skin tone (can add violet ambient tint, but base tone must match)
+- Apparent age, ethnicity, and gender
 
-Visual treatment:
-- Subtle scan-line texture and faint neural network overlays around the silhouette
-- Soft glowing rim light in violet (#7C3AED) and magenta (#C026D3) outlining head and shoulders
-- Cool dark background fading to deep navy (#0A0E1A) with a faint hexagonal or circuit grid
-- Skin retains natural midtones bathed in subtle violet ambient light
-- Eyes catch a small violet highlight suggesting activation
-- Optional: faint HUD tick marks or brackets framing the bust (very subtle)
+STYLE to apply:
+- Digital AI persona / neural avatar aesthetic — holographic agent profile in a sci-fi HUD
+- Deep navy background (#0A0E1A) with faint hexagonal or circuit grid
+- Violet (#7C3AED) and magenta (#C026D3) rim lighting outlining head and shoulders
+- Eyes: add a small violet highlight catch-light suggesting system activation
+- Subtle scan-line texture over the image
+- NOT anime, NOT cartoon, NOT 3D clay render, NOT full photorealism
 
-Composition:
-- Centered bust portrait, frontal, slight headroom
-- Visible shoulders, empty lower third for a card overlay (do NOT draw text/labels there)
-- Clean negative space around the silhouette
+COMPOSITION:
+- Centered bust/portrait, shoulders visible, slight headroom
+- Leave lower third clean (no text or overlays drawn by you)
+- Clean dark negative space around silhouette
 
-Constraints:
-- Do NOT add text, logos, dates, captions, labels, borders, or other people
-- Avoid yellow tones (deliberate departure from source style)
-- Avoid full photorealism, painterly brushstrokes, anime, chibi, cartoon, 3D-render-clay
-- Output must feel like a digital agent persona / synthetic intelligence portrait
+HARD CONSTRAINTS:
+- Do NOT add any text, logos, dates, watermarks, borders, or other people
+- Do NOT significantly alter face shape or make the person unrecognizable
+- Do NOT add yellow tones
 `.trim();
 
 type GenerateRequest = {

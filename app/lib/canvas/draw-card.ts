@@ -428,28 +428,29 @@ export function drawCardWithPortrait(ctx: CanvasRenderingContext2D, image: HTMLI
 export function captureSourceImage(video: HTMLVideoElement): string | null {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const W = 1024, H = 1024;
+  // Portrait 3:4 crop zoomed 1.5x into center-top — face fills more of the frame
+  const W = 768, H = 1024;
   if (!ctx) return null;
 
   canvas.width = W; canvas.height = H;
   const sw = video.videoWidth, sh = video.videoHeight;
-  const sRatio = sw / sh;
-  const tRatio = W / H;
-  let dx = 0, dy = 0, dw = W, dh = H;
 
-  if (sRatio > tRatio) {
-    dh = W / sRatio; dy = (H - dh) / 2;
-  } else {
-    dw = H * sRatio; dx = (W - dw) / 2;
-  }
+  // 1.5x zoom: sample only the center 2/3 of the video
+  const zoom = 1.5;
+  const cropW = sw / zoom;
+  const cropH = sh / zoom;
+  // Horizontal center, vertical bias toward top (where the face is)
+  const srcX = (sw - cropW) / 2;
+  const srcY = (sh - cropH) * 0.25;
 
   ctx.fillStyle = BRAND.bg;
   ctx.fillRect(0, 0, W, H);
+  // Mirror selfie horizontally
   ctx.translate(W, 0);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0, sw, sh, dx, dy, dw, dh);
+  ctx.drawImage(video, srcX, srcY, cropW, cropH, 0, 0, W, H);
 
-  return canvas.toDataURL("image/jpeg", 0.92);
+  return canvas.toDataURL("image/jpeg", 0.95);
 }
 
 // ─── Load image from URL ──────────────────────────────────────────────────────
