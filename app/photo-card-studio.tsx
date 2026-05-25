@@ -445,24 +445,14 @@ export default function PhotoCardStudio() {
             ))}
           </div>
         </section>
-        <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
-          {EVENT_COPY.footerOriginal}{" "}
+        <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs text-muted">
           <a
-            href={EVENT_COPY.footerOriginalUrl}
+            href="https://neuralab.lat"
             target="_blank"
             rel="noreferrer"
-            className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
+            className="font-black text-brand-glow transition hover:text-brand"
           >
-            {EVENT_COPY.footerOriginalHandle}
-          </a>
-          {" · "}{EVENT_COPY.footerRebrand}{" "}
-          <a
-            href={EVENT_COPY.footerRebrandUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
-          >
-            {EVENT_COPY.footerRebrandName}
+            Neura.Lab
           </a>
         </footer>
       </main>
@@ -471,10 +461,26 @@ export default function PhotoCardStudio() {
 
   return (
     <main className="flex min-h-dvh flex-col bg-bg text-white">
-      <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-5 py-6 sm:px-8 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:py-10">
-        <div className="flex flex-col gap-5">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-glow/50 bg-brand-glow/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.24em] text-brand-glow">
-            {EVENT_COPY.heroChip}
+      <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-5 py-6 sm:px-8 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:py-10">
+        <div className="flex flex-col gap-6">
+          {/* Branding lockup: logo centrado con wordmark */}
+          <div className="flex items-center gap-4 lg:gap-5">
+            <Image
+              src="/neura-logo.png"
+              alt="Neura.Lab"
+              width={120}
+              height={120}
+              priority
+              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-[120px] lg:h-[120px] object-contain shrink-0"
+            />
+            <div className="flex flex-col gap-1">
+              <p className="text-2xl font-black text-white tracking-[-0.03em] sm:text-3xl lg:text-4xl">
+                Neura.Lab
+              </p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.26em] text-brand-glow sm:text-xs lg:text-xs">
+                Growth Partners
+              </p>
+            </div>
           </div>
           <div className="space-y-4">
             <h1 className="max-w-xl text-5xl font-black leading-[0.92] tracking-[-0.06em] text-brand-glow sm:text-7xl">
@@ -545,6 +551,79 @@ export default function PhotoCardStudio() {
               </p>
             )}
           </div>
+
+          {/* ── Síguenos ── */}
+          <div className="border-t border-brand/10 pt-5">
+            <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-faint">
+              Síguenos en nuestras cuentas
+            </p>
+            <div className="flex flex-col gap-5">
+
+              {/* Neura.Lab */}
+              <div>
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-brand-glow">Neura.Lab</p>
+                <div className="flex flex-wrap gap-2">
+                  <a href="https://www.neuralab.lat" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+                      <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <span>neuralab.lat</span>
+                  </a>
+                  <a href="https://www.instagram.com/neura.lab_ai/" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                    </svg>
+                    <span>@neura.lab_ai</span>
+                  </a>
+                  <a href="https://www.linkedin.com/company/neuralab-ai/" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    <span>Neura.Lab</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Luis Uribe */}
+              <div>
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/50">Luis Uribe</p>
+                <div className="flex flex-wrap gap-2">
+                  <a href="https://www.linkedin.com/in/luis-uribehe/?skipRedirect=true" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    <span>luis-uribehe</span>
+                  </a>
+                  <a href="https://www.instagram.com/luisconia/" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                    </svg>
+                    <span>@luisconia</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Alejandro Huerta */}
+              <div>
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/50">Alejandro Huerta</p>
+                <div className="flex flex-wrap gap-2">
+                  <a href="https://www.linkedin.com/in/alejandro-huerta-herrera-9b8860181/" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-muted transition hover:border-brand-glow/40 hover:bg-brand-glow/5 hover:text-brand-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    <span>alejandro-huerta</span>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
 
         <div className="mx-auto w-full max-w-[430px] lg:max-w-[460px]">
@@ -599,32 +678,23 @@ export default function PhotoCardStudio() {
               )}
               <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_4px_rgba(0,0,0,0.7)]" />
             </div>
-            <p className="mt-3 text-center text-xs font-bold uppercase tracking-[0.18em] text-faint">
-              {capturedImage ? "Resultado final" : isGenerating ? "Generando" : "Cámara frontal"}
-            </p>
+            <div className="mt-3 text-center">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-glow">NEURA.LAB</p>
+              <p className="text-[10px] uppercase tracking-[0.20em] text-faint">Growth Partners</p>
+            </div>
           </div>
         </div>
       </section>
-      <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs leading-6 text-muted sm:text-sm">
-        {EVENT_COPY.footerOriginal}{" "}
-        <a
-          href={EVENT_COPY.footerOriginalUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
-        >
-          {EVENT_COPY.footerOriginalHandle}
-        </a>
-        {" · "}{EVENT_COPY.footerRebrand}{" "}
-        <a
-          href={EVENT_COPY.footerRebrandUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
-        >
-          {EVENT_COPY.footerRebrandName}
-        </a>
-      </footer>
+      <footer className="border-t border-brand/10 px-5 py-4 text-center font-mono text-xs text-muted">
+          <a
+            href="https://neuralab.lat"
+            target="_blank"
+            rel="noreferrer"
+            className="font-black text-brand-glow transition hover:text-brand"
+          >
+            Neura.Lab
+          </a>
+        </footer>
       {isShareDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm">
           <div

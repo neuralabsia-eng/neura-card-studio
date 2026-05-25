@@ -66,9 +66,25 @@ export default async function MuroPage({
       </div>
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-50 flex items-start justify-between gap-6 bg-gradient-to-b from-bg/92 via-bg/55 to-transparent p-5 pb-20 sm:p-8 sm:pb-24">
-        <h1 className="max-w-[calc(100%-8rem)] font-mono text-4xl font-black uppercase leading-[0.98] tracking-[0.08em] text-gradient-brand [font-variant-ligatures:none] [text-shadow:0_0_32px_rgba(124,58,237,0.6)] sm:max-w-[calc(100%-11rem)] sm:text-6xl lg:text-7xl">
-          {EVENT_COPY.wallTitle} · {EVENT_COPY.universityName}
-        </h1>
+        <div className="flex flex-col gap-3">
+          {/* Neura.Lab lockup — compact */}
+          <div className="flex items-center gap-2">
+            <Image
+              src="/neura-logo.png"
+              alt="Neura.Lab"
+              width={32}
+              height={32}
+              className="h-7 w-7 shrink-0 object-contain sm:h-8 sm:w-8"
+            />
+            <div className="flex flex-col">
+              <p className="text-sm font-black leading-tight tracking-[-0.02em] text-white sm:text-base">Neura.Lab</p>
+              <p className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-brand-glow sm:text-[9px]">Growth Partners</p>
+            </div>
+          </div>
+          <h1 className="whitespace-nowrap font-mono text-xl font-black uppercase leading-none tracking-[0.08em] text-gradient-brand [font-variant-ligatures:none] [text-shadow:0_0_24px_rgba(124,58,237,0.5)] sm:text-2xl">
+            {EVENT_COPY.wallTitle}
+          </h1>
+        </div>
         {!isPresenter && (
           <div className="shrink-0 bg-surface border border-brand/20 p-2 shadow-[0_18px_55px_rgba(124,58,237,0.3)] sm:p-3">
             <Image
@@ -91,22 +107,12 @@ export default async function MuroPage({
         isLive={isLive}
       />
 
-      <footer className="pointer-events-auto absolute inset-x-0 bottom-0 z-50 border-t border-brand/10 bg-bg/75 px-5 py-4 text-center font-mono text-xs leading-6 text-muted backdrop-blur-sm sm:text-sm">
-        {EVENT_COPY.footerOriginal}{" "}
+      <footer className="pointer-events-auto absolute inset-x-0 bottom-0 z-50 border-t border-brand/10 bg-bg/75 px-5 py-3 text-center font-mono text-xs text-muted backdrop-blur-sm">
         <a
-          href={EVENT_COPY.footerOriginalUrl}
+          href="https://neuralab.lat"
           target="_blank"
           rel="noreferrer"
-          className="font-black text-brand-glow underline decoration-brand/40 underline-offset-4 transition hover:text-brand"
-        >
-          @ErasmoHernandez
-        </a>
-        {" "}· {EVENT_COPY.footerRebrand}{" "}
-        <a
-          href={EVENT_COPY.footerRebrandUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="font-black text-foreground underline decoration-white/30 underline-offset-4 transition hover:text-brand-glow"
+          className="font-black text-brand-glow transition hover:text-brand"
         >
           Neura.Lab
         </a>

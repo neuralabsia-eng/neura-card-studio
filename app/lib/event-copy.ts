@@ -5,7 +5,7 @@ export const EVENT_COPY = {
   // Branding
   brandLabel:        "NEURA.LAB",
   universityName:    "UNIV. SAN PABLO",
-  eventShortName:    "TALLER · UNIV. SAN PABLO",
+  eventShortName:    "TALLER NEURA.LAB",
   eventFullName:     "Construye tu primer Agente IA desde cero",
   eventDateBadge:    "25MAY26",
 
@@ -14,7 +14,7 @@ export const EVENT_COPY = {
   pageDescription:   "Construye tu primer Agente IA desde cero — Taller virtual Neura.Lab × Universidad San Pablo. Captura tu retrato neural y compártelo en el muro del evento.",
 
   // Studio (/)
-  heroChip:          "NEURA.LAB × UNIV. SAN PABLO",
+  heroChip:          "NEURA.LAB",
   heroTitle:         "Activa tu agente IA",
   heroSubtitle:      "Captura una selfie, genera tu retrato neural con IA y compártelo en el muro del taller.",
   statusDefault:     "Toca Activar cámara para que el navegador solicite permiso.",
@@ -44,7 +44,7 @@ export const EVENT_COPY = {
   shareSuccess:      "Retrato enviado al muro. ¡Gracias por participar!",
 
   // Gate countdown
-  gateBadge:         "NEURA.LAB · TALLER SAN PABLO",
+  gateBadge:         "NEURA.LAB",
   gateTitle:         "El taller empieza pronto",
   gateSubtitle:      "La cámara y generación de retratos se habilitarán automáticamente al iniciar el taller.",
   gateApiMessage:    "La generación estará disponible cuando inicie el evento.",
@@ -64,7 +64,7 @@ export const EVENT_COPY = {
   // Card shareable statement
   cardStatement1:    "CONSTRUÍ MI PRIMER",
   cardStatement2:    "AGENTE IA",
-  cardDateLine:      "25 MAY 2026  ·  06:30 PM  ·  Google Meet",
+  cardDateLine:      "25 MAYO 2026",
 
   // Social y redes (tráfico e-IG/LinkedIn)
   instagramNeura:    "@neura.lab_ai",
@@ -72,5 +72,5 @@ export const EVENT_COPY = {
   linkedinNeura:     "linkedin.com/company/neuralab-ai",
   linkedinLuis:      "linkedin.com/in/luis-uribehe",
   website:           "neuralab.lat",
-  socialLine:        "@neura.lab_ai  ·  @LuisconIA  ·  neuralab.lat",
+  socialLine:        "@neura.lab_ai  ·  neuralab.lat",
 } as const;

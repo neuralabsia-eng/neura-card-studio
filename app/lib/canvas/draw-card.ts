@@ -37,8 +37,8 @@ function paintPixel(data: Uint8ClampedArray, i: number, hex: string) {
 export async function preloadFonts() {
   if (typeof document === "undefined") return;
   const sizes = [
-    "700 88px", "700 52px", "700 48px", "700 34px",
-    "600 32px", "600 22px",
+    "700 90px", "700 88px", "700 52px", "700 48px", "700 34px", "700 27px",
+    "600 32px", "600 30px", "600 22px",
     "500 24px", "500 22px", "500 20px",
   ];
   await Promise.all(sizes.map((s) => document.fonts.load(`${s} 'Space Grotesk', sans-serif`)));
@@ -102,9 +102,14 @@ function drawNeuraLogoMark(
   cy: number,
   size: number,
 ) {
-  const archR = size * 0.52;
-  const archCy = cy + size * 0.38;
-  const grad = ctx.createLinearGradient(cx - archR, cy, cx + archR, cy + size);
+  // Λ-shaped arch via quadratic bezier — matches the real Neura.Lab logomark
+  // Legs spread wide (≈ 90% of size), peak near top via control point above image
+  const legW = size * 0.46;         // half-span of arch legs
+  const legY = cy + size * 0.60;    // Y where legs terminate
+  const cpY  = cy - size * 0.35;    // bezier control point (above image top)
+  // Resulting peak ≈ cy + size*0.125 (near top of image)
+
+  const grad = ctx.createLinearGradient(cx - legW, 0, cx + legW, 0);
   grad.addColorStop(0, "#7C3AED");
   grad.addColorStop(0.5, "#A855F7");
   grad.addColorStop(1, "#C026D3");
@@ -113,16 +118,20 @@ function drawNeuraLogoMark(
   ctx.strokeStyle = grad;
   ctx.lineWidth = size * 0.17;
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
   ctx.beginPath();
-  ctx.arc(cx, archCy, archR, Math.PI * 1.08, Math.PI * 1.92, false);
+  ctx.moveTo(cx - legW, legY);
+  ctx.quadraticCurveTo(cx, cpY, cx + legW, legY);
   ctx.stroke();
 
+  // Two dots stacked vertically, centered inside the arch
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.arc(cx, cy + size * 0.64, size * 0.11, 0, Math.PI * 2);
+  ctx.arc(cx, cy + size * 0.68, size * 0.10, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx, cy + size * 0.85, size * 0.085, 0, Math.PI * 2);
+  ctx.arc(cx, cy + size * 0.85, size * 0.08, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -253,7 +262,7 @@ export function drawCardBackground(ctx: CanvasRenderingContext2D): PhotoArea {
 
 export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea) {
   const { x, y, width, height } = area;
-  const overlayH = 420;
+  const overlayH = 420;                  // extra bottom breathing room
   const overlayY = y + height - overlayH;
 
   // 1. Glow border around photo area
@@ -286,84 +295,73 @@ export function drawCardChrome(ctx: CanvasRenderingContext2D, area: PhotoArea) {
   ctx.lineWidth = 4;
   ctx.strokeRect(2, 2, CARD_WIDTH - 4, CARD_HEIGHT - 4);
 
-  // 4. Bottom gradient overlay — dark bg for text legibility
-  const gOver = ctx.createLinearGradient(0, overlayY - 80, 0, y + height);
+  // 4. Gradient fade + solid dark background so text is always legible
+  const gOver = ctx.createLinearGradient(0, overlayY - 90, 0, overlayY + 55);
   gOver.addColorStop(0, "rgba(10,14,26,0)");
-  gOver.addColorStop(0.22, "rgba(10,14,26,0.90)");
-  gOver.addColorStop(1, "rgba(10,14,26,0.98)");
+  gOver.addColorStop(1, "rgba(10,14,26,1.0)");
   ctx.fillStyle = gOver;
-  ctx.fillRect(x, overlayY - 80, width, overlayH + 80);
+  ctx.fillRect(x, overlayY - 90, width, 152);
+  // Solid from separator line down — guaranteed readable text
+  ctx.fillStyle = BRAND.bg;
+  ctx.fillRect(x, overlayY + 62, width, overlayH - 62);
 
-  // 5. Neura.Lab logo mark + wordmark
-  const logoSize = 54;
-  const logoRowCy = overlayY + 20 + logoSize / 2;
-  drawNeuraLogoMark(ctx, x + 72 + logoSize / 2, overlayY + 20, logoSize);
+  // 5. Neura.Lab logo mark + wordmark (larger, no university name)
+  const logoSize = 72;
+  const logoCy = overlayY + 18;             // top of logo mark
+  const logoMidY = logoCy + logoSize / 2;   // vertical center for text baseline
+  const logoCx = x + 52 + logoSize / 2;     // left margin + half logo width
+  drawNeuraLogoMark(ctx, logoCx, logoCy, logoSize);
 
   ctx.save();
-  ctx.font = "700 34px 'Space Grotesk', sans-serif";
+  ctx.font = "700 44px 'Space Grotesk', sans-serif";
   ctx.fillStyle = BRAND.brandGlow;
   ctx.shadowColor = BRAND.brandGlow;
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 18;
   ctx.textBaseline = "middle";
-  ctx.fillText("NEURA.LAB", x + 72 + logoSize + 14, logoRowCy);
-  ctx.restore();
-
-  // University name — right-aligned
-  ctx.save();
-  ctx.font = "500 21px 'Space Grotesk', sans-serif";
-  ctx.fillStyle = BRAND.textMuted;
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "right";
-  ctx.fillText(EVENT_COPY.universityName, x + width - 52, logoRowCy);
+  ctx.fillText("NEURA.LAB", logoCx + logoSize / 2 + 18, logoMidY);
   ctx.restore();
 
   // 6. Gradient separator
   const gLine = ctx.createLinearGradient(x + 40, 0, x + width - 40, 0);
   BRAND_GRADIENT_STOPS.forEach(([s, c]) => gLine.addColorStop(s, c));
   ctx.fillStyle = gLine;
-  ctx.fillRect(x + 48, overlayY + 88, width - 96, 2);
+  ctx.fillRect(x + 48, overlayY + 106, width - 96, 2);
 
-  // 7. Achievement statement — shareable, first-person
-  drawHudText(ctx, EVENT_COPY.cardStatement1, CARD_WIDTH / 2, overlayY + 146, {
-    font: "700 50px 'Space Grotesk', sans-serif",
+  // 7. "CONSTRUÍ MI PRIMER" — shareable statement
+  drawHudText(ctx, EVENT_COPY.cardStatement1, CARD_WIDTH / 2, overlayY + 162, {
+    font: "700 52px 'Space Grotesk', sans-serif",
     color: BRAND.text,
     letterSpacing: 2,
   });
 
-  // "AGENTE IA" — big glow highlight
+  // 8. "AGENTE IA" — big glow headline
   ctx.save();
-  ctx.font = "700 86px 'Space Grotesk', sans-serif";
+  ctx.font = "700 90px 'Space Grotesk', sans-serif";
   ctx.fillStyle = BRAND.brandGlow;
   ctx.shadowColor = BRAND.brandGlow;
-  ctx.shadowBlur = 36;
+  ctx.shadowBlur = 40;
   ctx.textBaseline = "middle";
   ctx.textAlign = "center";
-  ctx.fillText(EVENT_COPY.cardStatement2, CARD_WIDTH / 2, overlayY + 230);
+  ctx.fillText(EVENT_COPY.cardStatement2, CARD_WIDTH / 2, overlayY + 252);
   ctx.restore();
 
-  // 8. Thin separator
+  // 9. Thin separator
   ctx.fillStyle = BRAND.brand + "45";
-  ctx.fillRect(x + 80, overlayY + 284, width - 160, 1);
+  ctx.fillRect(x + 80, overlayY + 307, width - 160, 1);
 
-  // 9. Event full name
-  drawHudText(ctx, EVENT_COPY.eventFullName, CARD_WIDTH / 2, overlayY + 315, {
-    font: "500 22px 'Space Grotesk', sans-serif",
+  // 10. Date — simplified, just day and month (bigger, solid bg = legible)
+  drawHudText(ctx, EVENT_COPY.cardDateLine, CARD_WIDTH / 2, overlayY + 353, {
+    font: "600 30px 'Space Grotesk', sans-serif",
     color: BRAND.textMuted,
-    letterSpacing: 0.4,
+    letterSpacing: 3,
   });
 
-  // 10. Date + platform
-  drawHudText(ctx, EVENT_COPY.cardDateLine, CARD_WIDTH / 2, overlayY + 350, {
-    font: "500 19px 'Space Grotesk', sans-serif",
-    color: BRAND.textFaint,
-    letterSpacing: 0.8,
-  });
-
-  // 11. Social handles — drives traffic
-  drawHudText(ctx, EVENT_COPY.socialLine, CARD_WIDTH / 2, overlayY + 388, {
-    font: "600 21px 'Space Grotesk', sans-serif",
+  // 11. Social handles — bigger for shareability
+  drawHudText(ctx, EVENT_COPY.socialLine, CARD_WIDTH / 2, overlayY + 397, {
+    font: "700 27px 'Space Grotesk', sans-serif",
     color: BRAND.brandGlow,
-    letterSpacing: 1.2,
+    letterSpacing: 1.5,
+    glow: true,
   });
 
   // 12. Tick marks (outer card edges)
